@@ -1,0 +1,6 @@
+{
+  "name": "ts-repo",
+  "dependencies": {
+    "react": "^18.0.0"
+  }
+}

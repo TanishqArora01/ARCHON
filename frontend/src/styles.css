@@ -1,0 +1,351 @@
+/* ═══════════════════════════════════════════════════════════════
+   ARCHON — Cinematic Design System
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Tokens ─────────────────────────────────────────────────── */
+:root {
+  /* Palette */
+  --black:        #000000;
+  --black-glass:  rgba(8, 10, 14, 0.65);
+  --surface:      rgba(255, 255, 255, 0.04);
+  --surface-edge: rgba(255, 255, 255, 0.08);
+  --text-primary: #f0f2f5;
+  --text-muted:   rgba(255, 255, 255, 0.50);
+  --text-dim:     rgba(255, 255, 255, 0.28);
+  --accent-cyan:  #6ee7c0;
+  --accent-blue:  #7da8ff;
+  --accent-gold:  #f2d06b;
+  --accent-red:   #ff6b5a;
+  --glow-cyan:    rgba(110, 231, 192, 0.15);
+  --glow-blue:    rgba(125, 168, 255, 0.12);
+
+  /* Typography */
+  --font-display: 'Space Grotesk', system-ui, sans-serif;
+  --font-body:    'Inter', system-ui, sans-serif;
+
+  /* Spacing */
+  --space-xs:  8px;
+  --space-sm:  16px;
+  --space-md:  24px;
+  --space-lg:  40px;
+  --space-xl:  64px;
+  --space-2xl: 96px;
+  --space-3xl: 140px;
+
+  /* Transitions */
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --duration-slow: 1200ms;
+  --duration-med:  600ms;
+  --duration-fast: 300ms;
+}
+
+/* ── Reset ──────────────────────────────────────────────────── */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  color-scheme: dark;
+  font-synthesis: none;
+  text-rendering: geometricPrecision;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  color: var(--text-primary);
+  background: var(--black);
+  overflow-x: hidden;
+  line-height: 1.5;
+}
+
+/* ── Canvas Layer ───────────────────────────────────────────── */
+.canvas-container {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.canvas-container canvas {
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* ── Scroll Layer ───────────────────────────────────────────── */
+.scroll-container {
+  position: relative;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.scroll-container a,
+.scroll-container button {
+  pointer-events: auto;
+}
+
+/* ── Scene Section ──────────────────────────────────────────── */
+.scene-section {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Typography ─────────────────────────────────────────────── */
+.display-xl {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(48px, 8vw, 140px);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--text-primary);
+}
+
+.display-lg {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(36px, 5.5vw, 80px);
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  color: var(--text-primary);
+}
+
+.display-md {
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: clamp(24px, 3.5vw, 52px);
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  color: var(--text-primary);
+}
+
+.subtitle {
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: clamp(16px, 1.8vw, 22px);
+  line-height: 1.55;
+  color: var(--text-muted);
+  max-width: 560px;
+}
+
+.label {
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-cyan);
+}
+
+/* ── Overlay Layout ─────────────────────────────────────────── */
+.overlay-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  padding: var(--space-lg);
+  gap: var(--space-md);
+}
+
+.overlay-content.align-left {
+  align-items: flex-start;
+  text-align: left;
+  padding-left: clamp(var(--space-lg), 8vw, 140px);
+  padding-right: clamp(var(--space-lg), 8vw, 140px);
+}
+
+/* ── CTA Button ─────────────────────────────────────────────── */
+.cta-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(20px);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 16px;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all var(--duration-fast) var(--ease-out-quad);
+  pointer-events: auto;
+}
+
+.cta-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(110, 231, 192, 0.35);
+  box-shadow: 0 0 40px var(--glow-cyan);
+}
+
+.cta-button .arrow {
+  display: inline-block;
+  transition: transform var(--duration-fast) var(--ease-out-expo);
+}
+
+.cta-button:hover .arrow {
+  transform: translateX(4px);
+}
+
+/* ── Glass Card ─────────────────────────────────────────────── */
+.glass-card {
+  padding: var(--space-md) var(--space-lg);
+  border: 1px solid var(--surface-edge);
+  border-radius: 16px;
+  background: var(--black-glass);
+  backdrop-filter: blur(24px);
+}
+
+/* ── Metrics Grid ───────────────────────────────────────────── */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-sm);
+  width: 100%;
+  max-width: 900px;
+}
+
+.metric-card {
+  padding: var(--space-md);
+  border: 1px solid var(--surface-edge);
+  border-radius: 12px;
+  background: var(--black-glass);
+  backdrop-filter: blur(16px);
+  text-align: center;
+}
+
+.metric-card .metric-value {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: clamp(28px, 3vw, 42px);
+  color: var(--accent-cyan);
+  line-height: 1.1;
+}
+
+.metric-card .metric-label {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-top: 6px;
+}
+
+/* ── Capability List ────────────────────────────────────────── */
+.capability-list {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-sm);
+  list-style: none;
+}
+
+.capability-list li {
+  padding: 10px 24px;
+  border: 1px solid var(--surface-edge);
+  border-radius: 100px;
+  background: rgba(255, 255, 255, 0.03);
+  font-family: var(--font-body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+/* ── Scroll Indicator ───────────────────────────────────────── */
+.scroll-indicator {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.scroll-indicator span {
+  font-size: 12px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--text-dim);
+}
+
+.scroll-chevron {
+  width: 20px;
+  height: 20px;
+  border-right: 1.5px solid var(--text-dim);
+  border-bottom: 1.5px solid var(--text-dim);
+  transform: rotate(45deg);
+  animation: chevron-bounce 2.4s var(--ease-out-expo) infinite;
+}
+
+@keyframes chevron-bounce {
+  0%, 100% { transform: rotate(45deg) translateY(0); opacity: 0.4; }
+  50%      { transform: rotate(45deg) translateY(6px); opacity: 0.8; }
+}
+
+/* ── Divider Line ───────────────────────────────────────────── */
+.scene-divider {
+  width: 1px;
+  height: 80px;
+  background: linear-gradient(180deg, transparent, var(--surface-edge), transparent);
+  margin: 0 auto;
+}
+
+/* ── Visibility Utility ─────────────────────────────────────── */
+.initially-hidden {
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+/* ── Responsive ─────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .overlay-content {
+    padding: var(--space-md);
+  }
+
+  .overlay-content.align-left {
+    padding-left: var(--space-md);
+    padding-right: var(--space-md);
+  }
+
+  .metrics-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-xs);
+  }
+
+  .capability-list {
+    gap: var(--space-xs);
+  }
+
+  .capability-list li {
+    font-size: 12px;
+    padding: 8px 16px;
+  }
+
+  .scroll-indicator {
+    bottom: 24px;
+  }
+}
+
+@media (max-width: 480px) {
+  .metrics-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}

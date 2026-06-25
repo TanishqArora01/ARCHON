@@ -1,0 +1,61 @@
+from pydantic import Field
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+
+class Settings(BaseSettings):
+    APP_NAME: str = "Archon"
+    APP_VERSION: str = "0.1.0"
+    ENVIRONMENT: str = "development"
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+
+    DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/archon_test"
+    REDIS_URL: str = "redis://localhost:6379/0"
+    QDRANT_URL: str = "http://localhost:6333"
+    OLLAMA_URL: str = "http://localhost:11434"
+    OLLAMA_REQUEST_TIMEOUT: float = 20.0
+    WORKTREE_CACHE_DIR: str = ".archon_cache/worktrees"
+
+    API_AUTH_TOKEN: str | None = None
+    WEBHOOK_SECRET: str | None = None
+    WEBHOOK_RATE_LIMIT_PER_MINUTE: int = Field(default=60, ge=1)
+    SECRET_ENCRYPTION_KEY: str | None = None
+    JWT_SECRET_KEY: str = "archon-dev-secret-change-in-production"
+    FRONTEND_URL: str = "http://localhost:5173"
+
+    LLM_PROVIDER: str = "ollama"
+    LLM_MODEL: str = "qwen2.5"
+    LLM_FALLBACK_MODEL: str = "google/gemma-2-9b-it:free"
+    LLM_FALLBACK_PROVIDERS: str = "openrouter,mock"
+    OPENAI_API_KEY: str | None = None
+    OPENAI_BASE_URL: str = "https://api.openai.com/v1"
+    ANTHROPIC_API_KEY: str | None = None
+    ANTHROPIC_BASE_URL: str = "https://api.anthropic.com/v1"
+    OPENROUTER_API_KEY: str | None = None
+    OPENROUTER_BASE_URL: str = "https://openrouter.ai/api/v1"
+    AZURE_OPENAI_API_KEY: str | None = None
+    AZURE_OPENAI_ENDPOINT: str | None = None
+    AZURE_OPENAI_API_VERSION: str = "2024-10-21"
+
+    EMBEDDING_PROVIDER: str = "ollama"
+    EMBEDDING_MODEL: str = "nomic-embed-text"
+    WEBHOOK_IDEMPOTENCY_TTL_SECONDS: int = Field(default=300, ge=1)
+
+    VCS_PROVIDER: str = "logging"
+    GITHUB_TOKEN: str | None = None
+    GITHUB_API_URL: str = "https://api.github.com"
+    GITHUB_OAUTH_CLIENT_ID: str | None = None
+    GITHUB_OAUTH_CLIENT_SECRET: str | None = None
+    GITHUB_OAUTH_REDIRECT_URI: str | None = None
+    GITLAB_API_URL: str = "https://gitlab.com"
+    GITLAB_OAUTH_CLIENT_ID: str | None = None
+    GITLAB_OAUTH_CLIENT_SECRET: str | None = None
+    GITLAB_OAUTH_REDIRECT_URI: str | None = None
+
+    OTEL_ENABLED: bool = False
+    OTEL_EXPORTER_OTLP_ENDPOINT: str | None = None
+    OTEL_SERVICE_NAME: str = "archon"
+
+    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
+
+
+settings = Settings()
