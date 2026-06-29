@@ -76,7 +76,7 @@ function groupRuns(runs: AnalysisRun[]) {
 
   const now = new Date();
   const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  
+
   const groups: { title: string; runs: AnalysisRun[] }[] = [
     { title: 'Today', runs: [] },
     { title: 'Yesterday', runs: [] },
@@ -92,7 +92,7 @@ function groupRuns(runs: AnalysisRun[]) {
     const runDateObj = new Date(run.created_at);
     const runDay = new Date(runDateObj.getFullYear(), runDateObj.getMonth(), runDateObj.getDate());
     const diffDays = Math.round((todayDate.getTime() - runDay.getTime()) / (1000 * 3600 * 24));
-    
+
     if (diffDays === 0) groups[0].runs.push(run);
     else if (diffDays === 1) groups[1].runs.push(run);
     else if (diffDays <= 7) groups[2].runs.push(run);
@@ -106,10 +106,10 @@ function groupRuns(runs: AnalysisRun[]) {
 function StatusBadge({ status }: { status: string }) {
   const map: Record<string, { color: string; icon: React.ReactNode }> = {
     completed: { color: '#4ade80', icon: <CheckCircle size={12} /> },
-    failed:    { color: '#f87171', icon: <XCircle    size={12} /> },
-    running:   { color: '#60a5fa', icon: <Loader2    size={12} style={{ animation: 'spin 1s linear infinite' }} /> },
-    pending:   { color: '#f59e0b', icon: <Clock      size={12} /> },
-    queued:    { color: '#a78bfa', icon: <Clock      size={12} /> },
+    failed: { color: '#f87171', icon: <XCircle size={12} /> },
+    running: { color: '#60a5fa', icon: <Loader2 size={12} style={{ animation: 'spin 1s linear infinite' }} /> },
+    pending: { color: '#f59e0b', icon: <Clock size={12} /> },
+    queued: { color: '#a78bfa', icon: <Clock size={12} /> },
   };
   const s = map[status] ?? { color: 'rgba(255,255,255,0.4)', icon: null };
   return (
@@ -122,25 +122,25 @@ function StatusBadge({ status }: { status: string }) {
 // ── Main Component ────────────────────────────────────────────────────────
 
 const PIPELINE_STEPS = [
-  { id: 'parsing',      label: 'Parsing' },
-  { id: 'extraction',   label: 'Symbol Extraction' },
-  { id: 'resolution',   label: 'Symbol Resolution' },
-  { id: 'graph',        label: 'Graph Construction' },
-  { id: 'impact',       label: 'Impact Analysis' },
-  { id: 'retrieval',    label: 'Retrieval' },
-  { id: 'context',      label: 'Context Assembly' },
-  { id: 'reasoning',    label: 'Agent Reasoning' },
-  { id: 'synthesis',    label: 'Synthesis' },
+  { id: 'parsing', label: 'Parsing' },
+  { id: 'extraction', label: 'Symbol Extraction' },
+  { id: 'resolution', label: 'Symbol Resolution' },
+  { id: 'graph', label: 'Graph Construction' },
+  { id: 'impact', label: 'Impact Analysis' },
+  { id: 'retrieval', label: 'Retrieval' },
+  { id: 'context', label: 'Context Assembly' },
+  { id: 'reasoning', label: 'Agent Reasoning' },
+  { id: 'synthesis', label: 'Synthesis' },
 ];
 
 export function AnalysisView() {
-  const [runs, setRuns]         = useState<AnalysisRun[]>([]);
-  const [jobs, setJobs]         = useState<Job[]>([]);
-  const [repos, setRepos]       = useState<Repository[]>([]);
+  const [runs, setRuns] = useState<AnalysisRun[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
+  const [repos, setRepos] = useState<Repository[]>([]);
   const [reportsByRun, setReportsByRun] = useState<Record<string, ReviewReport[]>>({});
   const [expandedRunId, setExpandedRunId] = useState<string | null>(null);
-  const [isLoading, setIsLoading]       = useState(true);
-  const [triggering, setTriggering]     = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [triggering, setTriggering] = useState(false);
   const [selectedRepoId, setSelectedRepoId] = useState('');
   const [triggerMsg, setTriggerMsg] = useState<{ text: string; ok: boolean } | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -332,42 +332,42 @@ export function AnalysisView() {
         ) : (
           groupedRuns.map((group) => (
             <div key={group.title}>
-              <h3 style={{ 
-                fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', 
-                textTransform: 'uppercase', letterSpacing: '0.05em', 
-                marginBottom: '0.75rem', marginTop: '0', fontWeight: 600 
+              <h3 style={{
+                fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)',
+                textTransform: 'uppercase', letterSpacing: '0.05em',
+                marginBottom: '0.75rem', marginTop: '0', fontWeight: 600
               }}>
                 {group.title}
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
                 {group.runs.map((run, idx) => {
-                  const job     = jobForRun(run.id);
+                  const job = jobForRun(run.id);
                   const reports = reportsByRun[run.id] ?? [];
                   const isExpanded = expandedRunId === run.id;
-                  const repo    = repos.find(r => r.id === run.repository_id);
-                  const highCount   = countSeverity(reports, 'HIGH');
+                  const repo = repos.find(r => r.id === run.repository_id);
+                  const highCount = countSeverity(reports, 'HIGH');
                   const mediumCount = countSeverity(reports, 'MEDIUM');
-                  const lowCount    = countSeverity(reports, 'LOW');
+                  const lowCount = countSeverity(reports, 'LOW');
                   const totalFindings = highCount + mediumCount + lowCount;
 
                   const hasMetaData = run.meta_data && Object.keys(run.meta_data).length > 0;
-                  
+
                   // Extract payload metadata
                   const commitSha = job?.payload?.commit_sha as string | undefined;
                   const branch = (job?.payload as any)?.branch as string | undefined || 'main';
 
                   // Calculate structured summary metrics using temporary agent_name mappings
                   const overallRisk = highCount > 0 ? 'High' : (mediumCount > 0 ? 'Medium' : (lowCount > 0 ? 'Low' : 'None'));
-                  
-                  const { 
-                    archCount, techDebtCount, impactCount, 
-                    securityCount, testCount, executedAgents 
+
+                  const {
+                    archCount, techDebtCount, impactCount,
+                    securityCount, testCount, executedAgents
                   } = extractFindingsCategories(reports);
 
                   // Try to compute duration
                   let durationStr = '—';
-                  if (job && job.created_at && job.updated_at && job.status === 'completed') {
-                    const diffMs = new Date(job.updated_at).getTime() - new Date(job.created_at).getTime();
+                  if (job && job.created_at && (job as any).updated_at && job.status === 'completed') {
+                    const diffMs = new Date((job as any).updated_at).getTime() - new Date(job.created_at).getTime();
                     durationStr = `${(diffMs / 1000).toFixed(1)} s`;
                   }
 
@@ -429,9 +429,9 @@ export function AnalysisView() {
                           {/* Severity Indicator */}
                           {reports.length > 0 && totalFindings > 0 && (
                             <div style={{ display: 'flex', gap: '0.4rem' }}>
-                              {highCount   > 0 && <SeverityPill count={highCount}   level="HIGH" />}
+                              {highCount > 0 && <SeverityPill count={highCount} level="HIGH" />}
                               {mediumCount > 0 && <SeverityPill count={mediumCount} level="MEDIUM" />}
-                              {lowCount    > 0 && <SeverityPill count={lowCount}    level="LOW" />}
+                              {lowCount > 0 && <SeverityPill count={lowCount} level="LOW" />}
                             </div>
                           )}
                           {reports.length > 0 && totalFindings === 0 && (
@@ -444,7 +444,7 @@ export function AnalysisView() {
                             <StatusBadge status={run.status} />
                           </div>
                           {isExpanded
-                            ? <ChevronUp  size={15} color="rgba(255,255,255,0.3)" />
+                            ? <ChevronUp size={15} color="rgba(255,255,255,0.3)" />
                             : <ChevronDown size={15} color="rgba(255,255,255,0.3)" />
                           }
                         </div>
@@ -461,7 +461,7 @@ export function AnalysisView() {
                             style={{ overflow: 'hidden' }}
                           >
                             <div style={{ padding: '0 1.25rem 1.25rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                              
+
                               {/* Structured Analysis Summary */}
                               {reports.length > 0 && (
                                 <div style={{ marginTop: '1.5rem', marginBottom: '1.5rem', padding: '1.25rem', backgroundColor: 'rgba(255,255,255,0.02)', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.05)' }}>
@@ -554,15 +554,15 @@ export function AnalysisView() {
                                             <span style={{
                                               fontSize: '0.68rem', padding: '0.2rem 0.5rem',
                                               borderRadius: '4px', fontWeight: 700, flexShrink: 0,
-                                              backgroundColor: finding.severity === 'HIGH'   ? 'rgba(239,68,68,0.15)'  :
-                                                               finding.severity === 'MEDIUM' ? 'rgba(245,158,11,0.15)' : 'rgba(74,222,128,0.15)',
-                                              color:           finding.severity === 'HIGH'   ? '#ef4444'              :
-                                                               finding.severity === 'MEDIUM' ? '#f59e0b'              : '#4ade80',
+                                              backgroundColor: finding.severity === 'HIGH' ? 'rgba(239,68,68,0.15)' :
+                                                finding.severity === 'MEDIUM' ? 'rgba(245,158,11,0.15)' : 'rgba(74,222,128,0.15)',
+                                              color: finding.severity === 'HIGH' ? '#ef4444' :
+                                                finding.severity === 'MEDIUM' ? '#f59e0b' : '#4ade80',
                                             }}>
                                               {finding.severity}
                                             </span>
                                           </div>
-                                          
+
                                           {/* Standard Content: Evidence, Reasoning, Impact, Recommendation */}
                                           <div style={{ display: 'grid', gap: '0.75rem' }}>
                                             <div style={{ fontSize: '0.875rem', color: 'rgba(255,255,255,0.7)', lineHeight: 1.5 }}>
@@ -583,7 +583,7 @@ export function AnalysisView() {
                                               <strong style={{ color: 'rgba(255,255,255,0.9)', display: 'block', marginBottom: '0.2rem' }}>Recommendation</strong>
                                               {finding.recommendation}
                                             </div>
-                                            
+
                                             {/* Optional: Evidence Sources */}
                                             {finding.evidence_sources && Array.isArray(finding.evidence_sources) && finding.evidence_sources.length > 0 && (
                                               <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem', display: 'flex', gap: '0.5rem', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -600,15 +600,15 @@ export function AnalysisView() {
                                           {/* Repository-Aware Details Collapsible (Only if fields exist) */}
                                           {(finding.affected_files || finding.affected_modules || finding.affected_symbols || finding.dependency_chain || finding.blast_radius || finding.architecture_rules) && (
                                             <details style={{ marginTop: '1.25rem' }}>
-                                              <summary style={{ 
-                                                fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', 
+                                              <summary style={{
+                                                fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)',
                                                 cursor: 'pointer', outline: 'none', userSelect: 'none',
                                                 display: 'inline-flex', alignItems: 'center', gap: '0.3rem'
                                               }}>
                                                 Show Repository Context
                                               </summary>
-                                              <div style={{ 
-                                                marginTop: '0.75rem', padding: '0.875rem', 
+                                              <div style={{
+                                                marginTop: '0.75rem', padding: '0.875rem',
                                                 backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '6px',
                                                 border: '1px solid rgba(255,255,255,0.03)',
                                                 fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)'
@@ -631,15 +631,15 @@ export function AnalysisView() {
 
                               {/* Diagnostics Collapsible */}
                               <details style={{ marginTop: '2rem' }}>
-                                <summary style={{ 
-                                  fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)', 
+                                <summary style={{
+                                  fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)',
                                   cursor: 'pointer', outline: 'none', userSelect: 'none',
                                   display: 'inline-flex', alignItems: 'center', gap: '0.3rem'
                                 }}>
                                   Diagnostics & Execution Details
                                 </summary>
-                                <div style={{ 
-                                  marginTop: '0.75rem', padding: '0.875rem', 
+                                <div style={{
+                                  marginTop: '0.75rem', padding: '0.875rem',
                                   backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: '6px',
                                   border: '1px solid rgba(255,255,255,0.03)',
                                   fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)',
@@ -648,7 +648,7 @@ export function AnalysisView() {
                                   <div style={{ marginBottom: '0.4rem' }}>Job ID: {job?.id || 'Unknown'}</div>
                                   <div style={{ marginBottom: '0.4rem' }}>Status: {job?.status || 'Unknown'}</div>
                                   <div style={{ marginBottom: '0.4rem' }}>Attempts: {job?.attempts || 0}</div>
-                                  
+
                                   {reports.map((report, idx) => (
                                     report.report.agent_name && (
                                       <div key={idx} style={{ marginBottom: '0.4rem' }}>Provider/Agent: {report.report.agent_name}</div>
@@ -683,9 +683,9 @@ export function AnalysisView() {
 
 function SeverityPill({ count, level }: { count: number; level: string }) {
   const colors: Record<string, { bg: string; text: string }> = {
-    HIGH:   { bg: 'rgba(239,68,68,0.15)',  text: '#ef4444' },
+    HIGH: { bg: 'rgba(239,68,68,0.15)', text: '#ef4444' },
     MEDIUM: { bg: 'rgba(245,158,11,0.15)', text: '#f59e0b' },
-    LOW:    { bg: 'rgba(74,222,128,0.12)', text: '#4ade80' },
+    LOW: { bg: 'rgba(74,222,128,0.12)', text: '#4ade80' },
   };
   const c = colors[level] ?? colors.LOW;
   return (
