@@ -17,3 +17,17 @@ benchmark_results.json
 # Databases
 *.db
 archon.db
+
+# Node / Frontend dependencies
+node_modules/
+.pnpm-store/
+
+# Production frontend builds
+dist/
+.eslintcache
+
+# Local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
