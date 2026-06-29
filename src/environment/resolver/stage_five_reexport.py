@@ -67,7 +67,8 @@ class ReExportResolutionStage:
                         match = re.search(r"export\s+.*from\s+['\"](.*?)['\"]", text)
                         if match:
                             source = match.group(1)
-                            target_file = str((pathlib.Path(target.file_path).parent / source).resolve())
+                            import posixpath
+                            target_file = posixpath.normpath(str(pathlib.Path(target.file_path).parent / source)).replace('\\', '/')
                             if not target_file.endswith(".ts"):
                                 target_file += ".ts"
                             

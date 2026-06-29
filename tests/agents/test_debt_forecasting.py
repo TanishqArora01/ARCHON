@@ -67,6 +67,8 @@ def test_topological_debt_forecaster():
 def _make_debt_context(token: str = "debt-wf-001") -> AssembledAgentContext:
     return AssembledAgentContext(
         tracking_token=token,
+        repository_name="test_repo",
+        query_text="test query",
         structural=StructuralContext(
             impacted_file_paths=["core/god.py"],
             impacted_symbol_ids=["god_object"],

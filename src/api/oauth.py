@@ -116,7 +116,7 @@ async def _pop_oauth_state(state: str) -> str | None:
         provider = await redis_client.get(f"archon:oauth:state:{state}")
         if provider is not None:
             await redis_client.delete(f"archon:oauth:state:{state}")
-        return provider
+        return str(provider) if provider is not None else None
     except RedisError as exc:
         if settings.ENVIRONMENT not in {"development", "test"}:
             raise HTTPException(status_code=503, detail="OAuth state store is unavailable") from exc

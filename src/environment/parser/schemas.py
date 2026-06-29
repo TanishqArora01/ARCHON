@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import List, Tuple
+from typing import List, Tuple, Dict, Any
 from pydantic import BaseModel, Field
 
 class SymbolType(str, Enum):
@@ -18,6 +18,7 @@ class BaseASTToken(BaseModel):
     line_range: Tuple[int, int]
     byte_range: Tuple[int, int]
     children: List['BaseASTToken'] = Field(default_factory=list)
+    meta_data: Dict[str, Any] = Field(default_factory=dict)
 
 class UnresolvedSyntax(BaseModel):
     kind: str

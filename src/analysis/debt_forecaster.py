@@ -41,8 +41,7 @@ class TopologicalDebtForecaster:
             blast_radius = len(impacted) / total_nodes if total_nodes > 0 else 0.0
 
             # Complexity
-            meta = ast_metadata.get(node_id, {})
-            complexity = meta.get("complexity", 1.0)
+            complexity = node_data.get("cyclomatic_complexity") or ast_metadata.get(node_id, {}).get("complexity", 1.0)
             
             # TDI
             c_score = centrality.get(node_id, 0.0)

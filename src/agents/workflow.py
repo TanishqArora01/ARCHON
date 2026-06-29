@@ -6,12 +6,22 @@ Phase 9: Agentic Intelligence — LangGraph DAG Orchestrator
 Node execution order:
     planner_node
         ↓ (conditional routing)
-    architecture_agent_node  ┐  (parallel)
-    maintainability_agent_node ┘
-        ↓ (both converge)
+    architecture_agent_node  ┐  (parallel — each with its own NVIDIA NIM model)
+    maintainability_agent_node
+    technical_debt_agent_node
+    impact_agent_node         ┘
+        ↓ (all converge)
     synthesis_node
         ↓
     END
+
+When LLM_PROVIDER=nvidia, each agent uses a dedicated NVIDIA NIM model:
+  planner        → meta/llama-3.1-70b-instruct
+  architecture   → meta/llama-3.3-70b-instruct
+  maintainability → mistralai/mistral-large-2-instruct
+  technical_debt → google/gemma-3-27b-it
+  impact         → nvidia/llama-3.1-nemotron-70b-instruct
+  synthesis      → meta/llama-3.1-8b-instruct
 """
 
 from __future__ import annotations
@@ -24,7 +34,8 @@ from langgraph.graph import StateGraph, START, END
 from pydantic import BaseModel
 
 from src.agents.architecture_agent import ArchitectureAgent
-from src.agents.llm_provider import BaseLLMProvider, build_llm_provider
+from src.agents.impact_agent import ImpactAgent
+from src.agents.llm_provider import BaseLLMProvider, build_llm_provider, build_agent_llm_provider
 from src.agents.maintainability_agent import MaintainabilityAgent
 from src.agents.schemas import AgentReport
 from src.agents.state import GraphState
@@ -56,18 +67,19 @@ Available specialists:
 - "architecture"     — detects layer violations, boundary issues, architecture drift
 - "maintainability"  — detects coupling, complexity, technical debt, refactoring opportunities
 - "technical_debt"   — forecasts structural drag and compounding costs for structural choke points
+- "impact"           — evaluates change impact, blast radius, and risk scoring
 
 You MUST respond with a single valid JSON object matching this exact schema:
 {
-  "selected_agents": ["architecture", "maintainability", "technical_debt"],
+  "selected_agents": ["architecture", "maintainability", "technical_debt", "impact"],
   "rationale": "<one sentence explaining why these agents were chosen>"
 }
 
 Rules:
 - `selected_agents` must contain at least one value.
-- Valid values are only: "architecture", "maintainability", "technical_debt".
+- Valid values are only: "architecture", "maintainability", "technical_debt", "impact".
 - Do not output markdown, only raw JSON.
-- When in doubt, activate both specialists.
+- When in doubt, activate all specialists.
 """
 
 
@@ -88,20 +100,21 @@ async def planner_node(state: GraphState, llm: BaseLLMProvider) -> dict:
         user_message=context_str,
     )
 
-    # Parse routing plan — default to both agents on parse failure
+    # Parse routing plan — default to all agents on parse failure
     try:
-        data = json.loads(raw)
+        from src.agents.parsing import parse_json_from_llm
+        data = parse_json_from_llm(raw)
         plan = RoutingPlan(**data)
 
         # Sanitise: keep only valid agent names
-        valid = {"architecture", "maintainability", "technical_debt"}
+        valid = {"architecture", "maintainability", "technical_debt", "impact"}
         selected = [a for a in plan.selected_agents if a in valid]
         if not selected:
-            selected = ["architecture", "maintainability", "technical_debt"]
+            selected = ["architecture", "maintainability", "technical_debt", "impact"]
         rationale = plan.rationale
     except Exception:
         logger.warning("Planner returned malformed JSON; defaulting to all agents.")
-        selected = ["architecture", "maintainability", "technical_debt"]
+        selected = ["architecture", "maintainability", "technical_debt", "impact"]
         rationale = "Defaulted due to planner parse failure."
 
     return {
@@ -135,6 +148,14 @@ async def technical_debt_agent_node(state: GraphState, llm: BaseLLMProvider) -> 
     return {"raw_specialist_reports": [report]}
 
 
+@trace_and_time("agent_execution_latency", agent_type="impact")
+async def impact_agent_node(state: GraphState, llm: BaseLLMProvider) -> dict:
+    """Runs the ImpactAgent and appends its report to the parallel channel."""
+    agent = ImpactAgent(llm_provider=llm)
+    report: AgentReport = await agent.analyze(state["assembled_context"])
+    return {"raw_specialist_reports": [report]}
+
+
 @trace_and_time("agent_execution_latency", agent_type="synthesis")
 async def synthesis_node(state: GraphState) -> dict:
     """
@@ -159,6 +180,7 @@ def route_to_specialists(state: GraphState) -> list[str]:
         "architecture": "architecture_agent",
         "maintainability": "maintainability_agent",
         "technical_debt": "technical_debt_agent",
+        "impact": "impact_agent",
     }
     return [mapping[a] for a in state["selected_agents"] if a in mapping]
 
@@ -171,40 +193,63 @@ def build_archon_graph(llm: BaseLLMProvider | None = None):
     """
     Constructs and compiles the Archon LangGraph DAG.
 
+    When ``llm`` is explicitly provided (e.g. in tests), that single provider
+    is used for ALL nodes — planner and all specialists.
+
+    When ``llm`` is None (production), each specialist agent gets its own
+    per-agent LLM provider via ``build_agent_llm_provider()``.
+    When LLM_PROVIDER=nvidia, each agent routes to its specialized NVIDIA NIM
+    model from build.nvidia.com.
+
     Parameters
     ----------
-    llm : BaseLLMProvider
-        The LLM backend to inject into all nodes that require one.
-        Defaults to OllamaLLMProvider (qwen2.5) if not supplied.
+    llm : BaseLLMProvider | None
+        Override LLM for all nodes. Pass None in production.
 
     Returns
     -------
     CompiledGraph
         A compiled, executable LangGraph state machine.
     """
-    if llm is None:
-        llm = build_llm_provider()
+    # If an explicit LLM is passed (e.g. in tests), use it for all nodes.
+    # Otherwise each node gets its own per-agent provider.
+    if llm is not None:
+        planner_llm = llm
+        arch_llm = llm
+        maint_llm = llm
+        debt_llm = llm
+        impact_llm = llm
+    else:
+        planner_llm = build_agent_llm_provider("planner")
+        arch_llm = build_agent_llm_provider("architecture")
+        maint_llm = build_agent_llm_provider("maintainability")
+        debt_llm = build_agent_llm_provider("technical_debt")
+        impact_llm = build_agent_llm_provider("impact")
 
     graph = StateGraph(GraphState)
 
     # ── Node wrappers (async def so LangGraph can properly await them) ────
     async def _planner(s: GraphState) -> dict:
-        return await planner_node(s, llm)
+        return await planner_node(s, planner_llm)
 
     async def _arch(s: GraphState) -> dict:
-        return await architecture_agent_node(s, llm)
+        return await architecture_agent_node(s, arch_llm)
 
     async def _maint(s: GraphState) -> dict:
-        return await maintainability_agent_node(s, llm)
+        return await maintainability_agent_node(s, maint_llm)
 
     async def _debt(s: GraphState) -> dict:
-        return await technical_debt_agent_node(s, llm)
+        return await technical_debt_agent_node(s, debt_llm)
+
+    async def _impact(s: GraphState) -> dict:
+        return await impact_agent_node(s, impact_llm)
 
     # ── Register nodes ────────────────────────────────────────────────────
     graph.add_node("planner", _planner)  # type: ignore
     graph.add_node("architecture_agent", _arch)  # type: ignore
     graph.add_node("maintainability_agent", _maint)  # type: ignore
     graph.add_node("technical_debt_agent", _debt)  # type: ignore
+    graph.add_node("impact_agent", _impact)  # type: ignore
     graph.add_node("synthesis", synthesis_node)  # type: ignore
 
     # ── Edges ──────────────────────────────────────────────────────────────
@@ -219,15 +264,18 @@ def build_archon_graph(llm: BaseLLMProvider | None = None):
             "architecture_agent": "architecture_agent",
             "maintainability_agent": "maintainability_agent",
             "technical_debt_agent": "technical_debt_agent",
+            "impact_agent": "impact_agent",
         },
     )
 
-    # Both specialist paths converge at synthesis
+    # All specialist paths converge at synthesis
     graph.add_edge("architecture_agent", "synthesis")
     graph.add_edge("maintainability_agent", "synthesis")
     graph.add_edge("technical_debt_agent", "synthesis")
+    graph.add_edge("impact_agent", "synthesis")
 
     # Terminal
     graph.add_edge("synthesis", END)
 
     return graph.compile()
+

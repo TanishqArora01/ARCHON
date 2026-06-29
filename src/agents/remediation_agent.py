@@ -136,7 +136,8 @@ class RemediationAgent:
 
     def _parse_plan(self, raw: str, target_symbol_id: str) -> Optional[RemediationPlan]:
         try:
-            data = json.loads(raw)
+            from src.agents.parsing import parse_json_from_llm
+            data = parse_json_from_llm(raw)
 
             # Agent signalled it cannot produce a safe fix
             if "error" in data:

@@ -67,6 +67,7 @@ async def test_execute_fused_retrieval():
                 "id": str(uuid.uuid4()),
                 "vector": [0.5, 0.5, 0.5, 0.5],
                 "payload": {
+                    "snapshot_id": snapshot_id,
                     "text": "AuthService acts as the single source of truth.",
                     "file_path": "docs/adr/ADR-002-auth.md",
                     "doc_type": "ADR"

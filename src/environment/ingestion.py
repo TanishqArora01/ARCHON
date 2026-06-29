@@ -53,12 +53,15 @@ class RepositoryIngestor:
                     print(f"Failed to parse file: {res}")
                     continue
                 
+                from src.core.utils.path_normalizer import PathNormalizer
+                rel_posix_path = PathNormalizer.to_relative_posix(res.file_path, target_dir)
+
                 # Insert a FILE node to represent the module itself
-                file_node_id = f"{snapshot_id}::{res.file_path}::__FILE__"
+                file_node_id = f"{snapshot_id}::{rel_posix_path}::__FILE__"
                 nodes.append(SymbolNode(
                     id=file_node_id,
                     snapshot_id=snapshot_id,
-                    file_path=res.file_path,
+                    file_path=rel_posix_path,
                     symbol_name="__FILE__",
                     symbol_type="FILE",
                     meta_data={}
@@ -68,21 +71,24 @@ class RepositoryIngestor:
                 def extract(tokens, path):
                     for t in tokens:
                         sym_id = f"{snapshot_id}::{path}::{t.name}::{t.byte_range[0]}"
+                        meta_data = {
+                            "line_range": t.line_range,
+                            "byte_range": t.byte_range,
+                            "literal_text": t.literal_text,
+                            **t.meta_data
+                        }
+
                         nodes.append(SymbolNode(
                             id=sym_id,
                             snapshot_id=snapshot_id,
                             file_path=path,
                             symbol_name=t.name,
                             symbol_type=t.symbol_type.value,
-                            meta_data={
-                                "line_range": t.line_range,
-                                "byte_range": t.byte_range,
-                                "literal_text": t.literal_text,
-                            }
+                            meta_data=meta_data
                         ))
                         extract(t.children, path)
                 
-                extract(res.tokens, res.file_path)
+                extract(res.tokens, rel_posix_path)
 
             session.add_all(nodes)
             await session.commit()

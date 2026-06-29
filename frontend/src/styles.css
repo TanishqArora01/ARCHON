@@ -349,3 +349,164 @@ body {
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* ═══════════════════════════════════════════════════════════════
+   DASHBOARD — Design System
+   ═══════════════════════════════════════════════════════════════ */
+
+/* ── Global Animations ──────────────────────────────────────── */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes fade-slide-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes shimmer {
+  0%   { background-position: -400px 0; }
+  100% { background-position:  400px 0; }
+}
+
+/* ── Symbol Type Badges ─────────────────────────────────────── */
+.symbol-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-family: ui-monospace, 'Fira Code', monospace;
+}
+.symbol-badge.class    { background: rgba(96,165,250,0.15);  color: #60a5fa; }
+.symbol-badge.function { background: rgba(52,211,153,0.15);  color: #34d399; }
+.symbol-badge.method   { background: rgba(167,139,250,0.15); color: #a78bfa; }
+.symbol-badge.module   { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+.symbol-badge.import   { background: rgba(248,113,113,0.15); color: #f87171; }
+.symbol-badge.variable { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.6); }
+.symbol-badge.database { background: rgba(245,158,11,0.15);  color: #f59e0b; }
+.symbol-badge.api      { background: rgba(16,185,129,0.15);  color: #10b981; }
+.symbol-badge.default  { background: rgba(255,255,255,0.08); color: rgba(255,255,255,0.7); }
+
+/* ── Sidebar Active Indicator ───────────────────────────────── */
+.sidebar-nav-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  color: rgba(255,255,255,0.5);
+  background: transparent;
+  text-decoration: none;
+  font-size: 0.9rem;
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.sidebar-nav-link::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 3px;
+  height: 0;
+  border-radius: 0 3px 3px 0;
+  background: #6ee7c0;
+  transition: height 0.2s ease;
+}
+.sidebar-nav-link.active {
+  color: #fff;
+  background: rgba(255,255,255,0.05);
+}
+.sidebar-nav-link.active::before { height: 55%; }
+.sidebar-nav-link:hover:not(.active) {
+  color: rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.03);
+}
+
+/* ── Skeleton Loader ─────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    rgba(255,255,255,0.04) 0px,
+    rgba(255,255,255,0.08) 200px,
+    rgba(255,255,255,0.04) 400px
+  );
+  background-size: 800px;
+  animation: shimmer 1.8s infinite linear;
+  border-radius: 6px;
+}
+
+/* ── Toast Notifications ────────────────────────────────────── */
+.toast-container {
+  position: fixed;
+  bottom: 2rem;
+  right: 2rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.875rem 1.25rem;
+  border-radius: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  backdrop-filter: blur(20px);
+  animation: fade-slide-up 0.3s ease;
+  pointer-events: auto;
+  max-width: 380px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+.toast.success { background: rgba(20,40,30,0.95); border: 1px solid rgba(74,222,128,0.3); color: #4ade80; }
+.toast.error   { background: rgba(40,15,15,0.95);  border: 1px solid rgba(248,113,113,0.3); color: #f87171; }
+.toast.info    { background: rgba(15,20,40,0.95);  border: 1px solid rgba(96,165,250,0.3); color: #60a5fa; }
+
+/* ── Finding Cards ───────────────────────────────────────────── */
+.finding-card { padding: 1rem; margin-bottom: 0.75rem; background: rgba(255,255,255,0.03); border-radius: 6px; animation: fade-slide-up 0.25s ease; }
+.finding-card.high   { border-left: 3px solid #ef4444; }
+.finding-card.medium { border-left: 3px solid #f59e0b; }
+.finding-card.low    { border-left: 3px solid #4ade80; }
+
+/* ── Dashboard Card ──────────────────────────────────────────── */
+.dash-card {
+  background: rgba(18, 18, 18, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 10px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+  backdrop-filter: blur(4px);
+}
+.dash-card:hover {
+  border-color: rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 24, 0.8);
+}
+
+/* ── Dashboard Page Typography ───────────────────────────────── */
+.dash-page-title {
+  font-size: 1.75rem;
+  font-weight: 300;
+  letter-spacing: -0.025em;
+  color: #fff;
+  margin: 0;
+  line-height: 1.15;
+}
+.dash-page-subtitle {
+  color: rgba(255, 255, 255, 0.45);
+  margin: 0.4rem 0 0;
+  font-size: 0.875rem;
+  line-height: 1.6;
+}
+
+/* ── Responsive Dashboard ───────────────────────────────────── */
+@media (max-width: 1024px) { .dash-main { padding: 2rem !important; } }
+@media (max-width: 768px)  { .dash-main { padding: 1.5rem 1rem !important; } }

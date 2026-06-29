@@ -29,13 +29,13 @@ class Snapshot(Base):
 class AnalysisRun(Base):
     __tablename__ = "analysis_runs"
     id: Mapped[str] = mapped_column(String, primary_key=True, default=lambda: str(uuid.uuid4()))
-    snapshot_id: Mapped[str] = mapped_column(ForeignKey("snapshots.id"))
+    snapshot_id: Mapped[str | None] = mapped_column(ForeignKey("snapshots.id"), nullable=True)
     created_at: Mapped[datetime.datetime] = mapped_column(DateTime, default=utc_now)
     status: Mapped[str] = mapped_column(String, default="created", index=True)
     repository_id: Mapped[str | None] = mapped_column(ForeignKey("repositories.id"), nullable=True, index=True)
     meta_data: Mapped[dict] = mapped_column(JSON, default=dict)
 
-    snapshot: Mapped["Snapshot"] = relationship(back_populates="analysis_runs")
+    snapshot: Mapped["Snapshot | None"] = relationship(back_populates="analysis_runs")
 
 
 class SymbolNode(Base):

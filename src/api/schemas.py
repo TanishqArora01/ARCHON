@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import datetime
 from pydantic import BaseModel, Field
 
 
@@ -39,10 +40,11 @@ class ProviderRepositoryImport(BaseModel):
 
 class AnalysisRunRead(BaseModel):
     id: str
-    snapshot_id: str
+    snapshot_id: str | None = None
     status: str
     repository_id: str | None = None
     meta_data: dict = Field(default_factory=dict)
+    created_at: datetime | None = None
 
 
 class ReviewReportRead(BaseModel):
@@ -60,6 +62,7 @@ class JobRead(BaseModel):
     attempts: int
     last_error: str | None = None
     payload: dict
+    created_at: datetime | None = None
 
 
 class SymbolNodeRead(BaseModel):

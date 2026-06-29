@@ -23,6 +23,9 @@ function authHeaders(): Record<string, string> {
 }
 
 export function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof ApiError) {
+    return error.message;
+  }
   if (error instanceof Error && error.message) {
     return error.message;
   }
@@ -38,8 +41,19 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
     headers: { ...authHeaders(), ...(options?.headers || {}) },
   });
   if (!response.ok) {
-    const body = await response.json().catch(() => ({}));
-    throw new ApiError(response.status, body.detail || response.statusText);
+    let detail = response.statusText;
+    try {
+      const body = await response.json();
+      // Handle both {"detail": "..."} and {"detail": "...", "error": {...}} formats
+      if (body.detail) {
+        detail = typeof body.detail === 'string' ? body.detail : JSON.stringify(body.detail);
+      } else if (body.error?.message) {
+        detail = body.error.message;
+      }
+    } catch {
+      // Response body was not JSON — use statusText
+    }
+    throw new ApiError(response.status, detail);
   }
   return response.json();
 }
@@ -139,10 +153,11 @@ export async function importProviderRepository(data: ProviderRepository): Promis
 
 export interface AnalysisRun {
   id: string;
-  snapshot_id: string;
+  snapshot_id: string | null;
   status: string;
   repository_id: string | null;
   meta_data: Record<string, unknown>;
+  created_at: string | null;
 }
 
 export async function listAnalysisRuns(): Promise<AnalysisRun[]> {
@@ -151,6 +166,10 @@ export async function listAnalysisRuns(): Promise<AnalysisRun[]> {
 
 export async function getAnalysisRun(id: string): Promise<AnalysisRun> {
   return request<AnalysisRun>(`/api/v1/analysis-runs/${id}`);
+}
+
+export async function listRepositoryAnalysisRuns(repositoryId: string): Promise<AnalysisRun[]> {
+  return request<AnalysisRun[]>(`/api/v1/repositories/${repositoryId}/analysis-runs`);
 }
 
 // ─── Jobs ───────────────────────────────────────────────────────────────────
@@ -163,6 +182,7 @@ export interface Job {
   attempts: number;
   last_error: string | null;
   payload: Record<string, unknown>;
+  created_at: string | null;
 }
 
 export async function listJobs(): Promise<Job[]> {
@@ -227,4 +247,43 @@ export async function listReports(analysisRunId: string): Promise<ReviewReport[]
 
 export async function triggerAnalysis(repositoryId: string): Promise<Job> {
   return request<Job>(`/api/v1/repositories/${repositoryId}/analyze`, { method: 'POST' });
+}
+
+// ─── Agents ─────────────────────────────────────────────────────────────────
+
+export interface AgentInfo {
+  name: string;
+  label: string;
+  role: string;
+  provider: string;
+  model: string;
+  model_url: string | null;
+  status: string;
+}
+
+export interface AgentHealthResponse {
+  nvidia_configured: boolean;
+  ollama_reachable: boolean;
+  active_provider: string;
+  agents: AgentInfo[];
+}
+
+export async function listAgents(): Promise<AgentInfo[]> {
+  return request<AgentInfo[]>('/api/v1/agents');
+}
+
+export async function checkAgentHealth(): Promise<AgentHealthResponse> {
+  return request<AgentHealthResponse>('/api/v1/agents/health');
+}
+
+export async function runAgents(repositoryId: string, agents?: string[]): Promise<{
+  status: string;
+  message: string;
+  repository_id: string;
+  analysis_run_id: string | null;
+}> {
+  return request('/api/v1/agents/run', {
+    method: 'POST',
+    body: JSON.stringify({ repository_id: repositoryId, agents }),
+  });
 }

@@ -11,7 +11,7 @@ from src.core.config import settings
 from src.core.secrets import SecretManager
 from src.db.models import AnalysisJob, Repository, VCSInstallation
 from src.db.session import AsyncSessionLocal
-from src.services.analysis_jobs import enqueue_repository_analysis, push_analysis_task, run_inline_analysis
+from src.services.analysis_jobs import enqueue_repository_analysis, run_inline_analysis
 from src.services.repositories import get_or_create_default_tenant, upsert_repository
 
 router = APIRouter(prefix="/api/v1/repositories", tags=["repositories"], dependencies=[Depends(require_api_token)])

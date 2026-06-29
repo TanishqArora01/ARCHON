@@ -16,6 +16,8 @@ from src.retrieval.schemas import AssembledAgentContext, StructuralContext, Sema
 def _make_context(tracking_token: str = "test-token-001") -> AssembledAgentContext:
     return AssembledAgentContext(
         tracking_token=tracking_token,
+        repository_name="test_repo",
+        query_text="test query",
         structural=StructuralContext(
             impacted_file_paths=["core/auth.py", "api/routes.py"],
             impacted_symbol_ids=["node-b-uuid"],

@@ -9,8 +9,10 @@ class ContextAssembler:
         """
         lines = []
         lines.append(f"<!-- TRACKING_TOKEN: {context.tracking_token} -->")
-        lines.append("# ASSEMBLED CONTEXT BLOCK")
-        lines.append("\n## 1. STRUCTURAL IMPACT ANALYSIS")
+        lines.append(f"# ASSEMBLED CONTEXT BLOCK")
+        lines.append(f"**Repository**: {context.repository_name}")
+        lines.append(f"**Task/Query**: {context.query_text}\n")
+        lines.append("## 1. STRUCTURAL IMPACT ANALYSIS")
         
         struct = context.structural
         lines.append(f"**Blast Radius Score**: {struct.blast_radius_score:.2f}")

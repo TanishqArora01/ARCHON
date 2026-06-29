@@ -21,7 +21,8 @@ class GraphImpactTraverser:
         reversed_G = G.reverse(copy=False)
         
         # Find all downstream nodes affected by this change (which are descendants in the reversed graph)
-        impacted_nodes = nx.descendants(reversed_G, altered_node_id)
+        impacted_nodes = set(nx.descendants(reversed_G, altered_node_id))
+        impacted_nodes.add(altered_node_id)
         
         total_nodes = G.number_of_nodes()
         score = len(impacted_nodes) / total_nodes if total_nodes > 0 else 0.0
@@ -30,3 +31,10 @@ class GraphImpactTraverser:
             "impacted_node_ids": list(impacted_nodes),
             "blast_radius_score": float(score)
         }
+
+    @staticmethod
+    def calculate_centrality(G: nx.DiGraph) -> dict:
+        try:
+            return nx.pagerank(G)
+        except Exception:
+            return nx.degree_centrality(G)

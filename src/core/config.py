@@ -2,6 +2,9 @@ from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
+import pathlib
+import os
+
 class Settings(BaseSettings):
     APP_NAME: str = "Archon"
     APP_VERSION: str = "0.1.0"
@@ -14,6 +17,9 @@ class Settings(BaseSettings):
     OLLAMA_URL: str = "http://localhost:11434"
     OLLAMA_REQUEST_TIMEOUT: float = 20.0
     WORKTREE_CACHE_DIR: str = ".archon_cache/worktrees"
+    USE_REDIS_QUEUE: bool = True
+    
+    PROJECT_ROOT: str = pathlib.Path(os.path.abspath(__file__)).parent.parent.parent.as_posix()
 
     API_AUTH_TOKEN: str | None = None
     WEBHOOK_SECRET: str | None = None
@@ -35,6 +41,24 @@ class Settings(BaseSettings):
     AZURE_OPENAI_API_KEY: str | None = None
     AZURE_OPENAI_ENDPOINT: str | None = None
     AZURE_OPENAI_API_VERSION: str = "2024-10-21"
+
+    # ── NVIDIA NIM (build.nvidia.com) ──────────────────────────────────────
+    NVIDIA_API_KEY: str | None = None
+    NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
+
+    # Per-agent NVIDIA NIM model assignments (build.nvidia.com free tier models)
+    # Planner: orchestration & routing — strong instruction-following model
+    NVIDIA_PLANNER_MODEL: str = "meta/llama-3.1-70b-instruct"
+    # Architecture: boundary & layer analysis — advanced reasoning
+    NVIDIA_ARCHITECTURE_MODEL: str = "meta/llama-3.3-70b-instruct"
+    # Maintainability: complexity & tech debt — large context comprehension
+    NVIDIA_MAINTAINABILITY_MODEL: str = "mistralai/mistral-large-2-instruct"
+    # Technical Debt: forecasting structural drag — balanced performance
+    NVIDIA_DEBT_MODEL: str = "google/gemma-3-27b-it"
+    # Impact: blast radius & risk — specialized for analysis tasks
+    NVIDIA_IMPACT_MODEL: str = "nvidia/llama-3.1-nemotron-70b-instruct"
+    # Synthesis: final report aggregation — fast, efficient
+    NVIDIA_SYNTHESIS_MODEL: str = "meta/llama-3.1-8b-instruct"
 
     EMBEDDING_PROVIDER: str = "ollama"
     EMBEDDING_MODEL: str = "nomic-embed-text"

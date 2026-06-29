@@ -7,8 +7,18 @@ class PackageResolutionStage:
     def __init__(self):
         self.deps_cache = {}
 
-    def _find_dependencies(self, file_path: str) -> set[str]:
-        current_dir = Path(file_path).parent
+    def _find_dependencies(self, file_path: str, repository_path: str | None = None) -> set[str]:
+        from src.core.config import settings
+        import os
+        from src.core.utils.path_normalizer import PathNormalizer
+        
+        if not os.path.isabs(file_path):
+            base_dir = repository_path if repository_path else settings.PROJECT_ROOT
+            abs_path = os.path.join(base_dir, file_path)
+        else:
+            abs_path = file_path
+            
+        current_dir = Path(Path(abs_path).as_posix()).parent
         while current_dir.name and current_dir.parent != current_dir:
             # TypeScript / JavaScript
             pkg_json = current_dir / "package.json"
@@ -62,10 +72,10 @@ class PackageResolutionStage:
             
         return set()
 
-    def resolve(self, unresolved_references: list[UnresolvedReference]):
+    def resolve(self, unresolved_references: list[UnresolvedReference], repository_path: str | None = None):
         for ref in unresolved_references:
             if ref.failure_category in ["UNRESOLVED_RELATIVE_IMPORT", "UNRESOLVED_ALIAS", "UNRESOLVED_PACKAGE"]:
-                deps = self._find_dependencies(ref.file_path)
+                deps = self._find_dependencies(ref.file_path, repository_path)
                 
                 # Check root package name match
                 name_parts = ref.name.split("/") if "/" in ref.name else ref.name.split(".")

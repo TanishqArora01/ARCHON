@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Code2, GitMerge, RefreshCw, Lock, UploadCloud } from 'lucide-react';
-import { createRepository, importProviderRepository, listProviderRepositories, type ProviderRepository } from '../../api';
+import { X, Code2, GitMerge, RefreshCw, Lock, UploadCloud, ExternalLink, AlertCircle } from 'lucide-react';
+import { createRepository, importProviderRepository, listProviderRepositories, getErrorMessage, ApiError, type ProviderRepository } from '../../api';
 
 interface ConnectRepoModalProps {
   isOpen: boolean;
@@ -9,9 +9,12 @@ interface ConnectRepoModalProps {
   onSuccess: () => void;
 }
 
-function getErrorMessage(error: unknown, fallback: string): string {
-  return error instanceof Error ? error.message : fallback;
-}
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
+type ErrorState =
+  | { kind: 'message'; text: string }
+  | { kind: 'oauth'; provider: 'github' | 'gitlab' };
+
 
 export function ConnectRepoModal({ isOpen, onClose, onSuccess }: ConnectRepoModalProps) {
   const [provider, setProvider] = useState<'github' | 'gitlab'>('github');
@@ -21,7 +24,7 @@ export function ConnectRepoModal({ isOpen, onClose, onSuccess }: ConnectRepoModa
   const [providerRepos, setProviderRepos] = useState<ProviderRepository[]>([]);
   const [isLoadingProviderRepos, setIsLoadingProviderRepos] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<ErrorState | null>(null);
 
   if (!isOpen) return null;
 
@@ -44,7 +47,7 @@ export function ConnectRepoModal({ isOpen, onClose, onSuccess }: ConnectRepoModa
       setName('');
       setCloneUrl('');
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to connect repository'));
+      setError({ kind: 'message', text: getErrorMessage(err, 'Failed to connect repository') });
     } finally {
       setIsSubmitting(false);
     }
@@ -58,7 +61,12 @@ export function ConnectRepoModal({ isOpen, onClose, onSuccess }: ConnectRepoModa
       setProviderRepos(repos);
     } catch (err: unknown) {
       setProviderRepos([]);
-      setError(getErrorMessage(err, `Failed to load ${provider} repositories`));
+      // Detect OAuth-not-connected error (404 = no installation, 401 = not authenticated)
+      if (err instanceof ApiError && (err.status === 404 || err.status === 401)) {
+        setError({ kind: 'oauth', provider });
+      } else {
+        setError({ kind: 'message', text: getErrorMessage(err, `Failed to load ${provider} repositories`) });
+      }
     } finally {
       setIsLoadingProviderRepos(false);
     }
@@ -73,7 +81,7 @@ export function ConnectRepoModal({ isOpen, onClose, onSuccess }: ConnectRepoModa
       onClose();
       setProviderRepos([]);
     } catch (err: unknown) {
-      setError(getErrorMessage(err, 'Failed to import repository'));
+      setError({ kind: 'message', text: getErrorMessage(err, 'Failed to import repository') });
     } finally {
       setIsSubmitting(false);
     }
@@ -318,9 +326,48 @@ export function ConnectRepoModal({ isOpen, onClose, onSuccess }: ConnectRepoModa
               />
             </div>
 
-            {error && (
+            {error && error.kind === 'oauth' && (
+              <div style={{
+                padding: '1rem',
+                backgroundColor: 'rgba(96, 165, 250, 0.08)',
+                border: '1px solid rgba(96, 165, 250, 0.2)',
+                borderRadius: '8px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '0.75rem',
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', color: '#60a5fa', fontSize: '0.85rem' }}>
+                  <AlertCircle size={15} />
+                  Not connected to {error.provider === 'github' ? 'GitHub' : 'GitLab'} — you need to authorize access first.
+                </div>
+                <a
+                  href={`${API_BASE}/api/v1/oauth/${error.provider}/start`}
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    padding: '0.6rem 1rem',
+                    backgroundColor: error.provider === 'github' ? 'rgba(255,255,255,0.1)' : 'rgba(252,109,38,0.15)',
+                    border: `1px solid ${error.provider === 'github' ? 'rgba(255,255,255,0.2)' : 'rgba(252,109,38,0.3)'}`,
+                    borderRadius: '6px',
+                    color: '#fff',
+                    textDecoration: 'none',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    alignSelf: 'flex-start',
+                  }}
+                >
+                  <ExternalLink size={14} />
+                  Connect with {error.provider === 'github' ? 'GitHub' : 'GitLab'}
+                </a>
+                <p style={{ margin: 0, fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)' }}>
+                  Or use the manual entry form below to connect any public repository without OAuth.
+                </p>
+              </div>
+            )}
+            {error && error.kind === 'message' && (
               <div style={{ padding: '0.75rem', backgroundColor: 'rgba(255, 0, 0, 0.1)', border: '1px solid rgba(255, 0, 0, 0.2)', borderRadius: '8px', color: '#ff6b6b', fontSize: '0.85rem' }}>
-                {error}
+                {error.text}
               </div>
             )}
 

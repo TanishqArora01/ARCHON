@@ -4,6 +4,7 @@ from pathlib import Path
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from src.analysis.debt_forecaster import TopologicalDebtForecaster
 from src.architecture.drift_engine import DriftEngine
 from src.architecture.rules import ArchitectureRules
 from src.db.models import Snapshot
@@ -40,6 +41,10 @@ class HybridRetrievalEngine:
         impacted_node_ids = impact_result["impacted_node_ids"]
         blast_score = impact_result["blast_radius_score"]
         
+        # Calculate choke points for debt forecasting
+        choke_points = TopologicalDebtForecaster.compute_technical_debt_index(graph)
+        choke_point_dicts = [cp.model_dump(mode="json") for cp in choke_points]
+        
         # Resolve file paths for impacted nodes
         impacted_file_paths = set()
         for node_id in impacted_node_ids:
@@ -58,6 +63,7 @@ class HybridRetrievalEngine:
             impacted_file_paths=list(impacted_file_paths),
             impacted_symbol_ids=impacted_node_ids,
             blast_radius_score=blast_score,
+            choke_points=choke_point_dicts,
             architecture_violations=await self._load_architecture_violations(
                 db_session,
                 snapshot_id,
@@ -71,30 +77,40 @@ class HybridRetrievalEngine:
         semantic_context = SemanticContext()
         
         # Query Qdrant
-        if await qdrant_store.client.collection_exists(collection_name):
-            search_results = await qdrant_store.client.query_points(
-                collection_name=collection_name,
-                query=query_embedding,
-                limit=semantic_limit
-            )
+        search_results = await qdrant_store.search(
+            collection_name=collection_name,
+            query_vector=query_embedding,
+            limit=semantic_limit,
+            filter_payload={"snapshot_id": snapshot_id}
+        )
             
-            # Optionally filter/prioritize results here based on impacted_file_paths
-            # For this implementation, we map the top results directly
-            for result in search_results.points:
-                payload = result.payload or {}
-                chunk = payload.get("text", "")
-                file_path = payload.get("file_path", "")
+        # Standard vector search already returns the most semantically relevant items.
+        for result in search_results:
+            semantic_context.documentation_chunks.append(result["text"])
+            semantic_context.relevance_scores.append(result["score"])
+            semantic_context.source_files.append(result["file_path"])
                 
-                # Simple prioritization: if the document shares a filename core, we keep it.
-                # Standard vector search already returns the most semantically relevant items.
-                semantic_context.documentation_chunks.append(chunk)
-                semantic_context.relevance_scores.append(result.score)
-                semantic_context.source_files.append(file_path)
-                
+        # Resolve repository name
+        repository_name = "unknown"
+        snapshot_result = await db_session.execute(
+            select(Snapshot).where(Snapshot.id == snapshot_id)
+        )
+        snapshot = snapshot_result.scalar_one_or_none()
+        if snapshot and snapshot.repository_id:
+            from src.db.models import Repository
+            repo_result = await db_session.execute(
+                select(Repository).where(Repository.id == snapshot.repository_id)
+            )
+            repo = repo_result.scalar_one_or_none()
+            if repo:
+                repository_name = repo.name
+
         tracking_token = str(uuid.uuid4())
         
         return AssembledAgentContext(
             tracking_token=tracking_token,
+            repository_name=repository_name,
+            query_text=query_text,
             structural=structural_context,
             semantic=semantic_context
         )

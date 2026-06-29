@@ -14,7 +14,12 @@ router = APIRouter(prefix="/api/v1/graph", tags=["graph"], dependencies=[Depends
 
 
 @router.get("/search", response_model=list[SymbolNodeRead])
-async def search_graph(repository_id: str, query: str = "") -> list[SymbolNodeRead]:
+async def search_graph(
+    repository_id: str,
+    query: str = "",
+    limit: int = 200,
+    offset: int = 0,
+) -> list[SymbolNodeRead]:
     async with AsyncSessionLocal() as session:
         # Get the latest snapshot for the repository
         snapshot_result = await session.execute(
@@ -35,13 +40,12 @@ async def search_graph(repository_id: str, query: str = "") -> list[SymbolNodeRe
             stmt = stmt.where(
                 SymbolNode.symbol_name.ilike(search_term) | SymbolNode.file_path.ilike(search_term)
             )
-        
-        # Limit the results to prevent massive payloads
-        stmt = stmt.limit(100)
-        
+
+        stmt = stmt.order_by(SymbolNode.symbol_name).limit(min(limit, 500)).offset(offset)
+
         nodes_result = await session.execute(stmt)
         nodes = nodes_result.scalars().all()
-        
+
         return [
             SymbolNodeRead(
                 id=node.id,

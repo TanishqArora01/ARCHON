@@ -17,6 +17,17 @@ async def api_db(monkeypatch):
     monkeypatch.setattr("src.api.repositories.AsyncSessionLocal", SessionLocal)
     monkeypatch.setattr("src.api.analysis.AsyncSessionLocal", SessionLocal)
     monkeypatch.setattr("src.api.graph.AsyncSessionLocal", SessionLocal)
+    
+    # Mock lifespan database commands to prevent connecting to real Postgres
+    async def mock_schema(*args, **kwargs):
+        pass
+    monkeypatch.setattr("src.api.app.create_database_schema", mock_schema)
+    monkeypatch.setattr("src.api.app.dispose_database_engine", mock_schema)
+
+    # Mock run_inline_analysis so tests don't clone large repos
+    async def mock_inline(*args, **kwargs):
+        pass
+    monkeypatch.setattr("src.api.repositories.run_inline_analysis", mock_inline)
 
     yield SessionLocal
     await engine.dispose()

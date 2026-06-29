@@ -5,6 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.agents import router as agents_router
 from src.api.analysis import router as analysis_router
 from src.api.auth import router as auth_router
 from src.api.graph import router as graph_router
@@ -44,6 +45,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
+    app.include_router(agents_router)
     app.include_router(analysis_router)
     app.include_router(auth_router)
     app.include_router(oauth_router)

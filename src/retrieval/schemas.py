@@ -15,5 +15,7 @@ class SemanticContext(BaseModel):
 
 class AssembledAgentContext(BaseModel):
     tracking_token: str
+    repository_name: str
+    query_text: str
     structural: StructuralContext
     semantic: SemanticContext

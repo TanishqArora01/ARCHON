@@ -43,6 +43,10 @@ async def enqueue_repository_analysis(
 
 
 async def push_analysis_task(task_payload: dict) -> bool:
+    if not settings.USE_REDIS_QUEUE:
+        logger.info("USE_REDIS_QUEUE is False, bypassing Redis queue for job %s", task_payload.get("job_id"))
+        return False
+        
     try:
         redis_client = aioredis.from_url(
             settings.REDIS_URL,

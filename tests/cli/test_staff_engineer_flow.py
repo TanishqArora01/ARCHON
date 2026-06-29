@@ -94,6 +94,8 @@ async def test_run_archon_analysis(tmp_path, capsys, monkeypatch):
     async def mock_retrieve(self, db_session, qdrant_store, snapshot_id, collection_name, target_symbol_id, query_text, semantic_limit):
         return AssembledAgentContext(
             tracking_token="token",
+            repository_name="dummy_repo",
+            query_text=query_text,
             structural=StructuralContext(
                 impacted_file_paths=["src/main.py"],
                 impacted_symbol_ids=["dummy_snapshot::src/main.py::dummy"],

@@ -31,7 +31,7 @@ class GraphState(TypedDict):
 
     selected_agents : List[str]
         Populated by the planner_node after routing decision.
-        Valid values: "architecture", "maintainability".
+        Valid values: "architecture", "maintainability", "technical_debt", "impact".
 
     routing_rationale : str
         The planner's justification for its routing choice (for observability).

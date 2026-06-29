@@ -156,20 +156,91 @@ class AzureOpenAILLMProvider(OpenAICompatibleLLMProvider):
             return data["choices"][0]["message"]["content"]
 
 
+class NvidiaAgentLLMProvider(BaseLLMProvider):
+    """
+    NVIDIA NIM provider backed by build.nvidia.com free-tier API.
+    Routes each agent to a specialized NVIDIA NIM model for optimal performance.
+
+    Agent -> NVIDIA NIM Model Mapping (configurable via .env):
+    - planner        -> meta/llama-3.1-70b-instruct      (strong routing & instruction following)
+    - architecture   -> meta/llama-3.3-70b-instruct      (advanced architectural reasoning)
+    - maintainability -> mistralai/mistral-large-2-instruct (large context code analysis)
+    - technical_debt -> google/gemma-3-27b-it            (balanced performance for debt analysis)
+    - impact         -> nvidia/llama-3.1-nemotron-70b-instruct (NVIDIA specialized model)
+    - synthesis      -> meta/llama-3.1-8b-instruct       (fast, efficient aggregation)
+
+    Register at: https://build.nvidia.com
+    Set NVIDIA_API_KEY=nvapi-... in .env
+    """
+
+    DEFAULT_MODEL = "meta/llama-3.1-70b-instruct"
+
+    def __init__(self, agent_name: str = "planner", api_key: str | None = None):
+        resolved_key = api_key or settings.NVIDIA_API_KEY
+        if not resolved_key:
+            raise ValueError(
+                "NVIDIA_API_KEY is required for NvidiaAgentLLMProvider. "
+                "Register at https://build.nvidia.com and add NVIDIA_API_KEY=nvapi-... to .env"
+            )
+        self.api_key = resolved_key
+        self.base_url = settings.NVIDIA_BASE_URL.rstrip("/")
+        self.agent_name = agent_name
+
+        # Resolve per-agent model from config
+        agent_model_map: dict[str, str] = {
+            "planner": settings.NVIDIA_PLANNER_MODEL,
+            "architecture": settings.NVIDIA_ARCHITECTURE_MODEL,
+            "maintainability": settings.NVIDIA_MAINTAINABILITY_MODEL,
+            "technical_debt": settings.NVIDIA_DEBT_MODEL,
+            "impact": settings.NVIDIA_IMPACT_MODEL,
+            "synthesis": settings.NVIDIA_SYNTHESIS_MODEL,
+        }
+        self.model = agent_model_map.get(agent_name, self.DEFAULT_MODEL)
+        logger.info("NvidiaAgentLLMProvider: agent=%s -> model=%s", agent_name, self.model)
+
+    async def complete(self, system_prompt: str, user_message: str) -> str:
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "model": self.model,
+            "messages": [
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            "response_format": {"type": "json_object"},
+            "temperature": 0.2,
+            "top_p": 0.7,
+            "max_tokens": 4096,
+        }
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            response = await client.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=payload,
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data["choices"][0]["message"]["content"]
+
+
 class MockLLMProvider(BaseLLMProvider):
     async def complete(self, system_prompt: str, user_message: str) -> str:
         import json
 
         if "Planner Agent" in system_prompt:
             return json.dumps({
-                "selected_agents": ["architecture", "maintainability", "technical_debt"],
+                "selected_agents": ["architecture", "maintainability", "technical_debt", "impact"],
                 "rationale": "All specialists activated for comprehensive repository analysis.",
             })
 
         severity = "HIGH" if "Architecture Agent" in system_prompt else "MEDIUM"
         agent_label = "Architecture" if "Architecture Agent" in system_prompt else (
             "Maintainability" if "Maintainability Agent" in system_prompt else (
-                "Technical Debt" if "Technical Debt Agent" in system_prompt else "Analysis"
+                "Technical Debt" if "Technical Debt Agent" in system_prompt else (
+                    "Impact" if "Impact Agent" in system_prompt else "Analysis"
+                )
             )
         )
         return json.dumps({
@@ -239,6 +310,10 @@ def _build_single_llm_provider(provider_name: str, model: str | None = None) -> 
             resolved_model,
             settings.AZURE_OPENAI_API_VERSION,
         )
+    if provider == "nvidia":
+        if not settings.NVIDIA_API_KEY:
+            return None
+        return OpenAICompatibleLLMProvider(settings.NVIDIA_API_KEY, settings.NVIDIA_BASE_URL, resolved_model)
     return None
 
 
@@ -265,3 +340,34 @@ def build_llm_provider() -> BaseLLMProvider:
     if len(fallbacks) == 1:
         return primary
     return FallbackLLMProvider(fallbacks)
+
+
+def build_agent_llm_provider(agent_name: str) -> BaseLLMProvider:
+    """
+    Build a per-agent LLM provider.
+
+    When LLM_PROVIDER=nvidia and NVIDIA_API_KEY is set, each agent gets its own
+    specialized NVIDIA NIM model from build.nvidia.com.
+
+    Otherwise, falls back to the standard provider chain with mock as ultimate fallback.
+
+    Parameters
+    ----------
+    agent_name : str
+        One of: "planner", "architecture", "maintainability",
+                "technical_debt", "impact", "synthesis"
+    """
+    if settings.LLM_PROVIDER.lower() == "nvidia" and settings.NVIDIA_API_KEY:
+        try:
+            nvidia_provider = NvidiaAgentLLMProvider(agent_name=agent_name)
+            # Always wrap with mock fallback for resilience
+            return FallbackLLMProvider([nvidia_provider, MockLLMProvider()])
+        except ValueError as exc:
+            logger.warning(
+                "Could not build NVIDIA agent provider for %s: %s. Falling back to default.",
+                agent_name,
+                exc,
+            )
+
+    # Default: use the configured primary provider chain
+    return build_llm_provider()

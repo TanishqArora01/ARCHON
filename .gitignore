@@ -13,3 +13,7 @@ wheels/
 .archon_cache/
 benchmark_results.json
 .env
+
+# Databases
+*.db
+archon.db

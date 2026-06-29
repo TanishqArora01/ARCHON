@@ -25,6 +25,8 @@ from src.retrieval.schemas import AssembledAgentContext, StructuralContext, Sema
 def _make_context(token: str = "wf-test-001") -> AssembledAgentContext:
     return AssembledAgentContext(
         tracking_token=token,
+        repository_name="test_repo",
+        query_text="test query",
         structural=StructuralContext(
             impacted_file_paths=["core/auth.py", "api/routes.py"],
             impacted_symbol_ids=["node-auth-uuid", "node-routes-uuid"],
@@ -168,8 +170,8 @@ async def test_planner_malformed_json_defaults_to_all_agents():
 
     result = await compiled.ainvoke(initial_state)
 
-    # Must have defaulted to all 3 agents
-    assert set(result["selected_agents"]) == {"architecture", "maintainability", "technical_debt"}
+    # Must have defaulted to all 4 agents
+    assert set(result["selected_agents"]) == {"architecture", "maintainability", "technical_debt", "impact"}
 
     # Final report must still exist (the arch agent returned one LOW finding,
     # the maint agent returned nothing)

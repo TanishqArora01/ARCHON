@@ -6,6 +6,7 @@ from src.memory.providers import OllamaEmbeddingProvider, build_embedding_provid
 
 def test_build_default_llm_provider(monkeypatch):
     monkeypatch.setattr("src.agents.llm_provider.settings.LLM_PROVIDER", "ollama")
+    monkeypatch.setattr("src.agents.llm_provider.settings.LLM_FALLBACK_PROVIDERS", "")
     provider = build_llm_provider()
     assert isinstance(provider, OllamaLLMProvider)
 

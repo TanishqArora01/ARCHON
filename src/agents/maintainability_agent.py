@@ -71,7 +71,8 @@ class MaintainabilityAgent:
 
     def _parse_findings(self, raw: str) -> list[Finding]:
         try:
-            data = json.loads(raw)
+            from src.agents.parsing import parse_json_from_llm
+            data = parse_json_from_llm(raw)
             raw_findings = data.get("findings", [])
             findings = []
             for f in raw_findings:

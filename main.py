@@ -9,6 +9,7 @@ def main() -> None:
         host="0.0.0.0",
         port=8000,
         reload=settings.ENVIRONMENT == "development",
+        loop="none",
     )
 
 

@@ -38,6 +38,35 @@ class ParserEngine:
         else:
             raise ValueError(f"Unsupported extension: {extension}")
 
+    def _calculate_complexity(self, node: Node) -> int:
+        complexity = 1
+        branching_types = {
+            "if_statement", "for_statement", "while_statement", 
+            "case_clause", "except_clause", "conditional_expression",
+            "for_in_statement", "elif_clause"
+        }
+        
+        def walk(n: Node):
+            nonlocal complexity
+            if n.type in branching_types:
+                complexity += 1
+            elif n.type == "binary_operator":
+                # TypeScript/JS: &&, ||
+                operator_node = n.child_by_field_name("operator")
+                if operator_node and operator_node.type in ["&&", "||"]:
+                    complexity += 1
+            elif n.type == "boolean_operator":
+                # Python: and, or
+                for child in n.children:
+                    if child.type in ["and", "or"]:
+                        complexity += 1
+
+            for child in n.children:
+                walk(child)
+
+        walk(node)
+        return complexity
+
     def parse_code_string(self, code: str, language: str) -> "ASTValidationResult":
         """
         Perform an in-memory Tree-sitter syntax validation pass on a raw code string.
@@ -130,9 +159,14 @@ class ParserEngine:
                     literal_text=file_bytes[node.start_byte:node.end_byte].decode('utf-8'),
                     line_range=(node.start_point.row, node.end_point.row),
                     byte_range=(node.start_byte, node.end_byte),
-                    children=[]
+                    children=[],
+                    meta_data={}
                 )
+                if symbol_type in (SymbolType.FUNCTION, SymbolType.METHOD):
+                    token.meta_data["cyclomatic_complexity"] = self._calculate_complexity(node)
+                
                 node_to_token[node.id] = token
+
 
         root_tokens = []
         unresolved = []

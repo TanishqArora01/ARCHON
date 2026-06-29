@@ -207,6 +207,8 @@ async def process_repository_analysis_task(
             logger.warning("Retrieval error: %s", exc)
             context = AssembledAgentContext(
                 tracking_token=f"run-{snapshot_id[:8]}",
+                repository_name=repo_path_or_url.split("/")[-1].replace(".git", ""),
+                query_text=f"Analyze changes for {commit_sha}",
                 structural=StructuralContext(
                     impacted_file_paths=[],
                     impacted_symbol_ids=[],

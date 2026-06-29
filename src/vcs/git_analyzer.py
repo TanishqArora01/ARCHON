@@ -1,6 +1,5 @@
 import re
 from typing import List, Tuple
-from uuid import UUID
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from src.db.models import SymbolNode
@@ -58,15 +57,23 @@ class GitDiffAnalyzer:
 
         return patches
 
-    async def map_diff_to_symbols(self, db_session: AsyncSession, snapshot_id: UUID, diff_text: str) -> List[str]:
+    async def map_diff_to_symbols(self, db_session: AsyncSession, snapshot_id: str, diff_text: str) -> List[str]:
         """
         Maps a unified diff text to database SymbolNode IDs based on modified file paths and intersecting line ranges.
         """
+        from src.core.utils.path_normalizer import PathNormalizer
+        from src.db.models import Snapshot
+        
+        # Get repository path to resolve absolute paths used during ingestion
+        stmt_snap = select(Snapshot).where(Snapshot.id == str(snapshot_id))
+        result_snap = await db_session.execute(stmt_snap)
+        snapshot = result_snap.scalar_one_or_none()
+
         patches = self.parse_diff_patches(diff_text)
         impacted_symbol_ids = set()
 
         for patch in patches:
-            file_path = patch["file_path"]
+            rel_file_path = PathNormalizer.normalize_git_path(patch["file_path"])
             line_ranges = patch["line_ranges"]
 
             if not line_ranges:
@@ -75,7 +82,7 @@ class GitDiffAnalyzer:
             # Query all symbols in this file for this snapshot
             stmt = select(SymbolNode).where(
                 SymbolNode.snapshot_id == str(snapshot_id),
-                SymbolNode.file_path == file_path
+                SymbolNode.file_path == rel_file_path
             )
             result = await db_session.execute(stmt)
             symbols = result.scalars().all()
