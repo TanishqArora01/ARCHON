@@ -1,4 +1,4 @@
-from pydantic import Field
+from pydantic import Field, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -12,6 +12,23 @@ class Settings(BaseSettings):
     CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/archon_test"
+
+    @field_validator("DATABASE_URL", mode="before")
+    @classmethod
+    def ensure_asyncpg_driver(cls, v: str) -> str:
+        """Rewrite bare postgresql:// URLs to use the asyncpg async driver.
+
+        Railway (and most Postgres providers) supply a standard
+        ``postgresql://`` connection string.  SQLAlchemy's async engine
+        requires an explicit async driver; without one it falls back to
+        psycopg2, which is not installed.  This validator transparently
+        upgrades the scheme so callers never need to remember to set the
+        driver themselves.
+        """
+        if v.startswith("postgresql://"):
+            return v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        return v
+
     REDIS_URL: str = "redis://localhost:6379/0"
     QDRANT_URL: str = "http://localhost:6333"
     OLLAMA_URL: str = "http://localhost:11434"
