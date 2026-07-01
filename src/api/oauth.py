@@ -103,35 +103,83 @@ async def oauth_callback(provider: str, code: str, state: str) -> RedirectRespon
 
 
 async def _store_oauth_state(state: str, provider: str) -> None:
+    print(f"STORE {state}")
+
     try:
-        await redis_client.set(f"archon:oauth:state:{state}", provider, ex=OAUTH_STATE_TTL_SECONDS)
+        await redis_client.set(
+            f"archon:oauth:state:{state}",
+            provider,
+            ex=600,
+        )
+
+        exists = await redis_client.exists(
+            f"archon:oauth:state:{state}"
+        )
+        print("Stored?", exists)
+
     except RedisError as exc:
+        print("REDIS STORE ERROR:", repr(exc))
+
         if settings.ENVIRONMENT not in {"development", "test"}:
-            raise HTTPException(status_code=503, detail="OAuth state store is unavailable") from exc
-        _local_oauth_state[state] = (provider, time.time() + OAUTH_STATE_TTL_SECONDS)
+            raise HTTPException(
+                status_code=503,
+                detail="OAuth state store is unavailable",
+            ) from exc
+
+        _local_oauth_state[state] = (
+            provider,
+            time.time() + OAUTH_STATE_TTL_SECONDS,
+        )
 
 
 async def _pop_oauth_state(state: str) -> str | None:
+    print(f"LOOKUP {state}")
+
     try:
-        provider = await redis_client.get(f"archon:oauth:state:{state}")
-        if provider is not None:
-            await redis_client.delete(f"archon:oauth:state:{state}")
-        return str(provider) if provider is not None else None
+        provider = await redis_client.get(
+            f"archon:oauth:state:{state}"
+        )
+
+        print("FOUND", provider)
+
+        if provider is None:
+            return None
+
+        await redis_client.delete(
+            f"archon:oauth:state:{state}")
+
+        return str(provider)
+
     except RedisError as exc:
+        print("REDIS LOOKUP ERROR:", repr(exc))
+
         if settings.ENVIRONMENT not in {"development", "test"}:
-            raise HTTPException(status_code=503, detail="OAuth state store is unavailable") from exc
+            raise HTTPException(
+                status_code=503,
+                detail="OAuth state store is unavailable",
+            ) from exc
 
     now = time.time()
-    expired_states = [key for key, (_, expires_at) in _local_oauth_state.items() if expires_at <= now]
-    for key in expired_states:
-        _local_oauth_state.pop(key, None)
 
-    state_record = _local_oauth_state.pop(state, None)
-    if state_record is None:
+    expired = [
+        k
+        for k, (_, expires) in _local_oauth_state.items()
+        if expires <= now
+    ]
+
+    for k in expired:
+        _local_oauth_state.pop(k, None)
+
+    record = _local_oauth_state.pop(state, None)
+
+    if record is None:
         return None
-    provider, expires_at = state_record
-    if expires_at <= now:
+
+    provider, expires = record
+
+    if expires <= now:
         return None
+
     return provider
 
 
