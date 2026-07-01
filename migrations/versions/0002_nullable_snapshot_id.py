@@ -17,24 +17,30 @@ depends_on = None
 
 
 def upgrade() -> None:
-    # Make analysis_runs.snapshot_id nullable so runs can be created before snapshot ingestion
-    with op.batch_alter_table('analysis_runs', schema=None) as batch_op:
+    print("STEP 1: Alter snapshot_id")
+
+    with op.batch_alter_table("analysis_runs") as batch_op:
         batch_op.alter_column(
-            'snapshot_id',
+            "snapshot_id",
             existing_type=sa.String(),
             nullable=True,
         )
 
-    # Add repository_id to analysis_runs if it doesn't exist
-    # (it may already exist in the initial schema — use try/except for safety)
-    try:
-        with op.batch_alter_table('analysis_runs', schema=None) as batch_op:
-            batch_op.add_column(
-                sa.Column('repository_id', sa.String(), sa.ForeignKey('repositories.id'), nullable=True)
-            )
-    except Exception:
-        pass  # Column may already exist from initial schema
+    print("STEP 2: Add repository_id")
 
+    try:
+        with op.batch_alter_table("analysis_runs") as batch_op:
+            batch_op.add_column(
+                sa.Column(
+                    "repository_id",
+                    sa.String(),
+                    sa.ForeignKey("repositories.id"),
+                    nullable=True,
+                )
+            )
+    except Exception as e:
+        print("repository_id:", repr(e))
+        raise
 
 def downgrade() -> None:
     with op.batch_alter_table('analysis_runs', schema=None) as batch_op:
