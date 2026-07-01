@@ -162,18 +162,18 @@ class NvidiaAgentLLMProvider(BaseLLMProvider):
     Routes each agent to a specialized NVIDIA NIM model for optimal performance.
 
     Agent -> NVIDIA NIM Model Mapping (configurable via .env):
-    - planner        -> meta/llama-3.1-70b-instruct      (strong routing & instruction following)
-    - architecture   -> meta/llama-3.3-70b-instruct      (advanced architectural reasoning)
-    - maintainability -> mistralai/mistral-large-2-instruct (large context code analysis)
-    - technical_debt -> google/gemma-3-27b-it            (balanced performance for debt analysis)
-    - impact         -> nvidia/llama-3.1-nemotron-70b-instruct (NVIDIA specialized model)
-    - synthesis      -> meta/llama-3.1-8b-instruct       (fast, efficient aggregation)
+    - planner        -> deepseek-ai/deepseek-v4-pro      (strong routing & instruction following)
+    - architecture   -> deepseek-ai/deepseek-v4-pro      (advanced architectural reasoning)
+    - maintainability -> deepseek-ai/deepseek-v4-flash   (large context code analysis)
+    - technical_debt -> nvidia/nemotron-3-ultra          (balanced performance for debt analysis)
+    - impact         -> deepseek-ai/deepseek-v4-pro      (specialized model)
+    - synthesis      -> deepseek-ai/deepseek-v4-flash    (fast, efficient aggregation)
 
     Register at: https://build.nvidia.com
     Set NVIDIA_API_KEY=nvapi-... in .env
     """
 
-    DEFAULT_MODEL = "meta/llama-3.1-70b-instruct"
+    DEFAULT_MODEL = "deepseek-ai/deepseek-v4-pro"
 
     def __init__(self, agent_name: str = "planner", api_key: str | None = None):
         resolved_key = api_key or settings.NVIDIA_API_KEY

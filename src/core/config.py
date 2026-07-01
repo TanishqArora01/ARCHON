@@ -46,19 +46,19 @@ class Settings(BaseSettings):
     NVIDIA_API_KEY: str | None = None
     NVIDIA_BASE_URL: str = "https://integrate.api.nvidia.com/v1"
 
-    # Per-agent NVIDIA NIM model assignments (build.nvidia.com free tier models)
+    # Per-agent NVIDIA NIM model assignments
     # Planner: orchestration & routing — strong instruction-following model
-    NVIDIA_PLANNER_MODEL: str = "meta/llama-3.1-70b-instruct"
+    NVIDIA_PLANNER_MODEL: str = "deepseek-ai/deepseek-v4-pro"
     # Architecture: boundary & layer analysis — advanced reasoning
-    NVIDIA_ARCHITECTURE_MODEL: str = "meta/llama-3.3-70b-instruct"
+    NVIDIA_ARCHITECTURE_MODEL: str = "deepseek-ai/deepseek-v4-pro"
     # Maintainability: complexity & tech debt — large context comprehension
-    NVIDIA_MAINTAINABILITY_MODEL: str = "mistralai/mistral-large-2-instruct"
+    NVIDIA_MAINTAINABILITY_MODEL: str = "deepseek-ai/deepseek-v4-flash"
     # Technical Debt: forecasting structural drag — balanced performance
-    NVIDIA_DEBT_MODEL: str = "google/gemma-3-27b-it"
+    NVIDIA_DEBT_MODEL: str = "nvidia/nemotron-3-ultra"
     # Impact: blast radius & risk — specialized for analysis tasks
-    NVIDIA_IMPACT_MODEL: str = "nvidia/llama-3.1-nemotron-70b-instruct"
+    NVIDIA_IMPACT_MODEL: str = "deepseek-ai/deepseek-v4-pro"
     # Synthesis: final report aggregation — fast, efficient
-    NVIDIA_SYNTHESIS_MODEL: str = "meta/llama-3.1-8b-instruct"
+    NVIDIA_SYNTHESIS_MODEL: str = "deepseek-ai/deepseek-v4-flash"
 
     EMBEDDING_PROVIDER: str = "ollama"
     EMBEDDING_MODEL: str = "nomic-embed-text"
