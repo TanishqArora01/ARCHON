@@ -1,5 +1,21 @@
-import uvicorn
+# import uvicorn
 
+# from src.core.config import settings
+
+
+# def main() -> None:
+#     uvicorn.run(
+#         "src.api.app:app",
+#         host="0.0.0.0",
+#         port=8000,
+#         reload=settings.ENVIRONMENT == "development",
+#         loop="none",
+#     )
+
+
+# if __name__ == "__main__":
+#     main()
+import uvicorn
 from src.core.config import settings
 
 
@@ -7,9 +23,10 @@ def main() -> None:
     uvicorn.run(
         "src.api.app:app",
         host="0.0.0.0",
-        port=8000,
+        port=settings.PORT,
         reload=settings.ENVIRONMENT == "development",
-        loop="none",
+        log_level="info",
+        loop="auto",
     )
 
 

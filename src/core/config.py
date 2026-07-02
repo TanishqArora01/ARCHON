@@ -79,6 +79,8 @@ class Settings(BaseSettings):
     OTEL_EXPORTER_OTLP_ENDPOINT: str | None = None
     OTEL_SERVICE_NAME: str = "archon"
 
+    PORT: int = 8000
+
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8", extra="ignore")
 
 
