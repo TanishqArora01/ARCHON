@@ -37,7 +37,7 @@ services:
     build:
       context: ./frontend
       args:
-        VITE_API_URL: http://localhost:8000
+        VITE_API_URL: https://archon-ixrh.onrender.com
     ports:
       - "5173:80"
     depends_on:

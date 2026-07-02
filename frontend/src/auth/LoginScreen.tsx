@@ -33,7 +33,7 @@ export function LoginScreen() {
       }
     } else {
       // Redirect to the FastAPI backend to start the OAuth flow
-      const backendUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const backendUrl = import.meta.env.VITE_API_URL || 'https://archon-ixrh.onrender.com';
       window.location.href = `${backendUrl}/api/v1/oauth/${provider}/start`;
     }
   };
