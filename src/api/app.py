@@ -37,6 +37,9 @@ def create_app() -> FastAPI:
         description="Repository intelligence and AI Staff Engineer API.",
         lifespan=lifespan,
     )
+    @app.get("/")
+    async def root():
+        return {"status": "ok", "service": settings.APP_NAME}
     app.add_middleware(
         CORSMiddleware,
         allow_origins=[origin.strip() for origin in settings.CORS_ORIGINS.split(",") if origin.strip()],
