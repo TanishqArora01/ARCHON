@@ -21,17 +21,22 @@ async def enqueue_repository_analysis(
     tenant_id: str | None = None,
     event_type: str = "manual",
     diff_text: str = "",
+    event_metadata_extra: dict | None = None,
 ) -> tuple[str, dict, bool]:
     """
     Create an analysis job and enqueue it on Redis when available.
 
     Returns (job_id, task_payload, queued_on_redis).
     """
+    event_metadata: dict = {"type": event_type}
+    if event_metadata_extra:
+        event_metadata.update(event_metadata_extra)
+
     task_payload: dict = {
         "repo_url": repo.clone_url,
         "commit_sha": repo.default_branch or "HEAD",
         "diff_text": diff_text,
-        "event_metadata": {"type": event_type},
+        "event_metadata": event_metadata,
         "repository_id": repo.id,
     }
     job = await create_analysis_job(session, task_payload, tenant_id=tenant_id, repository_id=repo.id)

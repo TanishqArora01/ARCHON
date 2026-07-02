@@ -217,7 +217,7 @@ async def process_repository_analysis_task(
                 semantic=SemanticContext(documentation_chunks=[], relevance_scores=[], source_files=[]),
             )
 
-    report_markdown, final_report, tracking_token = await _run_agent_workflow(context)
+    report_markdown, final_report, tracking_token = await _run_agent_workflow(context, event_metadata)
 
     remediation_diffs: list[str] = []
     if final_report and final_report.findings:
@@ -260,14 +260,25 @@ async def process_repository_analysis_task(
     logger.info("Task processing completed for snapshot=%s", snapshot_id)
 
 
-async def _run_agent_workflow(context: AssembledAgentContext) -> tuple[str, Any, str]:
+async def _run_agent_workflow(
+    context: AssembledAgentContext,
+    event_metadata: dict[str, Any] | None = None,
+) -> tuple[str, Any, str]:
     try:
         graph = build_archon_graph()
+        metadata = event_metadata or {}
+        valid_agents = {"architecture", "maintainability", "technical_debt", "impact"}
+        forced_agents = metadata.get("selected_agents") or []
+        preselected = [agent for agent in forced_agents if agent in valid_agents]
+        routing_rationale = ""
+        if preselected:
+            routing_rationale = f"User-requested specialists: {', '.join(preselected)}"
+
         state = {
             "assembled_context": context,
-            "selected_agents": [],
+            "selected_agents": preselected,
             "raw_specialist_reports": [],
-            "routing_rationale": "",
+            "routing_rationale": routing_rationale,
             "final_report": None,
         }
         result_state = await graph.ainvoke(state)

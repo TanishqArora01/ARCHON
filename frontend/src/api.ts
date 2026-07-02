@@ -263,6 +263,7 @@ export interface AgentInfo {
 
 export interface AgentHealthResponse {
   nvidia_configured: boolean;
+  nvidia_reachable: boolean;
   ollama_reachable: boolean;
   active_provider: string;
   agents: AgentInfo[];
@@ -280,6 +281,7 @@ export async function runAgents(repositoryId: string, agents?: string[]): Promis
   status: string;
   message: string;
   repository_id: string;
+  job_id: string;
   analysis_run_id: string | null;
 }> {
   return request('/api/v1/agents/run', {

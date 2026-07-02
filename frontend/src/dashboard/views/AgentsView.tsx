@@ -107,8 +107,8 @@ export function AgentsView() {
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
               <span style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>NVIDIA NIM</span>
-              <span style={{ color: health.nvidia_configured ? '#76b900' : 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
-                {health.nvidia_configured ? '✓ Configured' : '✗ Not configured'}
+              <span style={{ color: health.nvidia_configured && health.nvidia_reachable ? '#76b900' : health.nvidia_configured ? '#f59e0b' : 'rgba(255,255,255,0.4)', fontWeight: 500 }}>
+                {!health.nvidia_configured ? '✗ Not configured' : health.nvidia_reachable ? '✓ Reachable' : '✗ Unreachable'}
               </span>
             </div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>

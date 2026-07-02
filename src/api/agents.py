@@ -11,20 +11,24 @@ Endpoints:
 from __future__ import annotations
 
 import httpx
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from pydantic import BaseModel
-from sqlalchemy import select
 
 from src.api.security import require_api_token
 from src.core.config import settings
-from src.db.models import AnalysisRun, Repository, Snapshot
+from src.db.models import Repository
 from src.db.session import AsyncSessionLocal
+from src.services.analysis_jobs import enqueue_repository_analysis, run_inline_analysis
+from src.services.repositories import get_or_create_default_tenant
 
 router = APIRouter(
     prefix="/api/v1/agents",
     tags=["agents"],
     dependencies=[Depends(require_api_token)],
 )
+
+NVIDIA_REASONING_URL = "https://build.nvidia.com/explore/reasoning"
+VALID_SPECIALIST_AGENTS = frozenset({"architecture", "maintainability", "technical_debt", "impact"})
 
 
 # ─── Schemas ────────────────────────────────────────────────────────────────
@@ -41,6 +45,7 @@ class AgentInfo(BaseModel):
 
 class AgentHealthResponse(BaseModel):
     nvidia_configured: bool
+    nvidia_reachable: bool
     ollama_reachable: bool
     active_provider: str
     agents: list[AgentInfo]
@@ -48,13 +53,14 @@ class AgentHealthResponse(BaseModel):
 
 class AgentRunRequest(BaseModel):
     repository_id: str
-    agents: list[str] | None = None  # None = all agents
+    agents: list[str] | None = None  # None = planner selects specialists
 
 
 class AgentRunResponse(BaseModel):
     status: str
     message: str
     repository_id: str
+    job_id: str
     analysis_run_id: str | None = None
 
 
@@ -77,7 +83,7 @@ def _get_agent_definitions() -> list[AgentInfo]:
                 else settings.LLM_MODEL
             ),
             model_url=(
-                f"https://build.nvidia.com/explore/reasoning"
+                NVIDIA_REASONING_URL
                 if (provider == "nvidia" and nvidia_configured)
                 else None
             ),
@@ -93,7 +99,7 @@ def _get_agent_definitions() -> list[AgentInfo]:
                 else settings.LLM_MODEL
             ),
             model_url=(
-                f"https://build.nvidia.com/explore/reasoning"
+                NVIDIA_REASONING_URL
                 if (provider == "nvidia" and nvidia_configured)
                 else None
             ),
@@ -109,7 +115,7 @@ def _get_agent_definitions() -> list[AgentInfo]:
                 else settings.LLM_MODEL
             ),
             model_url=(
-                f"https://build.nvidia.com/explore/reasoning"
+                NVIDIA_REASONING_URL
                 if (provider == "nvidia" and nvidia_configured)
                 else None
             ),
@@ -125,7 +131,7 @@ def _get_agent_definitions() -> list[AgentInfo]:
                 else settings.LLM_MODEL
             ),
             model_url=(
-                f"https://build.nvidia.com/explore/reasoning"
+                NVIDIA_REASONING_URL
                 if (provider == "nvidia" and nvidia_configured)
                 else None
             ),
@@ -141,7 +147,7 @@ def _get_agent_definitions() -> list[AgentInfo]:
                 else settings.LLM_MODEL
             ),
             model_url=(
-                f"https://build.nvidia.com/explore/reasoning"
+                NVIDIA_REASONING_URL
                 if (provider == "nvidia" and nvidia_configured)
                 else None
             ),
@@ -156,6 +162,36 @@ def _get_agent_definitions() -> list[AgentInfo]:
         ),
     ]
     return agents
+
+
+async def _check_nvidia_reachable() -> bool:
+    if not settings.NVIDIA_API_KEY:
+        return False
+    try:
+        async with httpx.AsyncClient(timeout=3.0) as client:
+            resp = await client.get(
+                f"{settings.NVIDIA_BASE_URL.rstrip('/')}/models",
+                headers={"Authorization": f"Bearer {settings.NVIDIA_API_KEY}"},
+            )
+            return resp.status_code == 200
+    except Exception:
+        return False
+
+
+def _validate_selected_agents(agents: list[str] | None) -> list[str] | None:
+    if agents is None:
+        return None
+
+    selected = [agent for agent in agents if agent in VALID_SPECIALIST_AGENTS]
+    if not selected:
+        raise HTTPException(
+            status_code=400,
+            detail=(
+                "No valid specialist agents requested. "
+                f"Valid values: {', '.join(sorted(VALID_SPECIALIST_AGENTS))}"
+            ),
+        )
+    return selected
 
 
 # ─── Endpoints ──────────────────────────────────────────────────────────────
@@ -175,12 +211,12 @@ async def list_agents() -> list[AgentInfo]:
 async def check_agent_health() -> AgentHealthResponse:
     """
     Check the health of all agent providers.
-    Tests NVIDIA NIM reachability and Ollama local runtime.
+    Tests NVIDIA NIM API reachability and Ollama local runtime.
     """
     nvidia_configured = bool(settings.NVIDIA_API_KEY)
+    nvidia_reachable = await _check_nvidia_reachable()
     ollama_reachable = False
 
-    # Test Ollama reachability
     try:
         async with httpx.AsyncClient(timeout=3.0) as client:
             resp = await client.get(f"{settings.OLLAMA_URL}/api/tags")
@@ -191,10 +227,14 @@ async def check_agent_health() -> AgentHealthResponse:
     active_provider = settings.LLM_PROVIDER
     agents = _get_agent_definitions()
 
-    # Update status based on provider health
     for agent in agents:
         if agent.provider == "nvidia":
-            agent.status = "ready" if nvidia_configured else "unconfigured"
+            if not nvidia_configured:
+                agent.status = "unconfigured"
+            elif not nvidia_reachable:
+                agent.status = "unreachable"
+            else:
+                agent.status = "ready"
         elif agent.provider == "ollama":
             agent.status = "ready" if ollama_reachable else "unreachable"
         elif agent.provider == "mock":
@@ -206,6 +246,7 @@ async def check_agent_health() -> AgentHealthResponse:
 
     return AgentHealthResponse(
         nvidia_configured=nvidia_configured,
+        nvidia_reachable=nvidia_reachable,
         ollama_reachable=ollama_reachable,
         active_provider=active_provider,
         agents=agents,
@@ -213,16 +254,18 @@ async def check_agent_health() -> AgentHealthResponse:
 
 
 @router.post("/run", response_model=AgentRunResponse)
-async def run_agents(payload: AgentRunRequest) -> AgentRunResponse:
+async def run_agents(payload: AgentRunRequest, background_tasks: BackgroundTasks) -> AgentRunResponse:
     """
     Trigger a targeted agent analysis run on a specific repository.
 
-    This enqueues a fresh analysis run using the currently configured LLM provider.
-    When LLM_PROVIDER=nvidia, each agent will use its specialized NVIDIA NIM model.
+    This enqueues a fresh analysis job using the currently configured LLM provider.
+    When `agents` is omitted, the planner selects specialists. When provided,
+    only the listed specialist agents run.
     """
-    from src.services.analysis_jobs import enqueue_repository_analysis, run_inline_analysis
-    from src.services.repositories import get_or_create_default_tenant
-    import asyncio
+    selected_agents = _validate_selected_agents(payload.agents)
+    event_metadata_extra: dict | None = None
+    if selected_agents is not None:
+        event_metadata_extra = {"selected_agents": selected_agents}
 
     async with AsyncSessionLocal() as session:
         repo = await session.get(Repository, payload.repository_id)
@@ -235,48 +278,24 @@ async def run_agents(payload: AgentRunRequest) -> AgentRunResponse:
             repo,
             tenant_id=tenant.id,
             event_type="agent_run",
+            event_metadata_extra=event_metadata_extra,
         )
         await session.commit()
 
-    # Run inline since we don't have background_tasks in this path
     if not queued:
-        asyncio.create_task(run_inline_analysis(task_payload))
+        background_tasks.add_task(run_inline_analysis, task_payload)
+
+    agents_note = ""
+    if selected_agents:
+        agents_note = f" Specialists: {', '.join(selected_agents)}."
 
     return AgentRunResponse(
         status="queued",
         message=(
             f"Agent analysis queued for repository '{repo.name}'. "
-            f"Using provider: {settings.LLM_PROVIDER}."
+            f"Using provider: {settings.LLM_PROVIDER}.{agents_note}"
         ),
         repository_id=payload.repository_id,
-        analysis_run_id=job_id,
+        job_id=job_id,
+        analysis_run_id=None,
     )
-
-
-@router.get("/repository/{repository_id}/runs")
-async def list_repository_analysis_runs(repository_id: str) -> list[dict]:
-    """
-    List all analysis runs for a specific repository, ordered newest first.
-    """
-    async with AsyncSessionLocal() as session:
-        repo = await session.get(Repository, repository_id)
-        if not repo:
-            raise HTTPException(status_code=404, detail="Repository not found")
-
-        result = await session.execute(
-            select(AnalysisRun)
-            .where(AnalysisRun.repository_id == repository_id)
-            .order_by(AnalysisRun.created_at.desc())
-        )
-        runs = result.scalars().all()
-
-        return [
-            {
-                "id": run.id,
-                "snapshot_id": run.snapshot_id,
-                "status": run.status,
-                "repository_id": run.repository_id,
-                "meta_data": run.meta_data or {},
-            }
-            for run in runs
-        ]

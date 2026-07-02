@@ -93,6 +93,13 @@ async def planner_node(state: GraphState, llm: BaseLLMProvider) -> dict:
     Evaluates the assembled context and produces a RoutingPlan.
     Writes `selected_agents` and `routing_rationale` into shared state.
     """
+    preselected = state.get("selected_agents") or []
+    if preselected:
+        return {
+            "selected_agents": preselected,
+            "routing_rationale": state.get("routing_rationale") or "Pre-selected agent run.",
+        }
+
     context_str = ContextAssembler.format_context_for_llm(state["assembled_context"])
 
     raw = await llm.complete(
