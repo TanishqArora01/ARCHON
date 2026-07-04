@@ -17,7 +17,7 @@ class Settings(BaseSettings):
     OLLAMA_URL: str = "http://localhost:11434"
     OLLAMA_REQUEST_TIMEOUT: float = 20.0
     WORKTREE_CACHE_DIR: str = ".archon_cache/worktrees"
-    USE_REDIS_QUEUE: bool = True
+    USE_REDIS_QUEUE: bool = False  # Set True only when a dedicated worker process is running
     
     PROJECT_ROOT: str = pathlib.Path(os.path.abspath(__file__)).parent.parent.parent.as_posix()
 
