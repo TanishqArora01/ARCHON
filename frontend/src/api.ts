@@ -189,6 +189,10 @@ export async function listJobs(): Promise<Job[]> {
   return request<Job[]>('/api/v1/jobs');
 }
 
+export async function cleanupStaleJobs(): Promise<{ cleaned: number; message: string }> {
+  return request('/api/v1/jobs/cleanup', { method: 'POST' });
+}
+
 // ─── Health ─────────────────────────────────────────────────────────────────
 
 export async function healthCheck(): Promise<{ status: string; service: string }> {

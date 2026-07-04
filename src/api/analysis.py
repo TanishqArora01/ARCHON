@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from src.api.schemas import AnalysisRunRead, JobRead, ReviewReportRead
 from src.api.security import require_api_token
@@ -83,3 +83,22 @@ async def list_jobs() -> list[JobRead]:
             )
             for job in result.scalars().all()
         ]
+
+
+@router.post("/jobs/cleanup", response_model=dict)
+async def cleanup_stale_jobs() -> dict:
+    """Mark orphaned 'queued' jobs (attempts=0) as failed.
+
+    These are jobs that were enqueued before the worker/inline runner was
+    available and will never be picked up. Calling this endpoint resets
+    them so the UI shows a clean state.
+    """
+    async with AsyncSessionLocal() as session:
+        result = await session.execute(
+            update(AnalysisJob)
+            .where(AnalysisJob.status == "queued", AnalysisJob.attempts == 0)
+            .values(status="failed", last_error="Job expired — server was restarted before processing")
+        )
+        await session.commit()
+        cleaned = result.rowcount
+    return {"cleaned": cleaned, "message": f"{cleaned} stale job(s) marked as failed"}

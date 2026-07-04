@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import update
 
 from src.api.agents import router as agents_router
 from src.api.analysis import router as analysis_router
@@ -14,7 +15,8 @@ from src.api.repositories import router as repositories_router
 from src.api.webhooks import router as webhooks_router
 from src.api.security import require_api_token
 from src.core.config import settings
-from src.db.session import create_database_schema, dispose_database_engine
+from src.db.models import AnalysisJob
+from src.db.session import AsyncSessionLocal, create_database_schema, dispose_database_engine
 from src.observability.telemetry import init_production_telemetry
 
 
@@ -26,6 +28,17 @@ async def lifespan(app: FastAPI):
             await create_database_schema()
         except Exception:
             app.state.database_bootstrap_failed = True
+    # Clean up stale 'queued' jobs from previous server instances
+    try:
+        async with AsyncSessionLocal() as session:
+            await session.execute(
+                update(AnalysisJob)
+                .where(AnalysisJob.status == "queued", AnalysisJob.attempts == 0)
+                .values(status="failed", last_error="Server restarted — job never processed")
+            )
+            await session.commit()
+    except Exception:
+        pass  # Non-fatal — don't block startup
     yield
     await dispose_database_engine()
 
