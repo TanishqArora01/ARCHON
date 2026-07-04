@@ -5,6 +5,12 @@ ENV PYTHONUNBUFFERED=1
 
 WORKDIR /app
 
+# Install git (required for repository checkout/analysis) and other utilities
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    git \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
 COPY pyproject.toml README.md ./
 COPY alembic.ini ./
 COPY migrations ./migrations
@@ -13,6 +19,9 @@ COPY scripts ./scripts
 COPY main.py ./main.py
 
 RUN pip install --no-cache-dir .
+
+# Create cache directory for git worktrees
+RUN mkdir -p /app/.archon_cache/worktrees
 
 EXPOSE 8000
 
