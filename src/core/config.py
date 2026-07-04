@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     APP_NAME: str = "Archon"
     APP_VERSION: str = "0.1.0"
     ENVIRONMENT: str = "development"
-    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173"
+    CORS_ORIGINS: str = "http://localhost:5173,http://127.0.0.1:5173,https://archon-inky.vercel.app"
 
     DATABASE_URL: str = "postgresql+asyncpg://postgres:postgres@localhost:5432/archon_test"
     REDIS_URL: str = "redis://localhost:6379/0"
