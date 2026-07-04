@@ -6,6 +6,7 @@ import { CinematicScene } from './three/CinematicScene';
 import { ScrollContainer, SceneSection } from './scroll/ScrollContainer';
 import { useScrollProgress } from './scroll/useScrollProgress';
 
+import { MarketingNav } from './overlays/MarketingNav';
 import { HeroOverlay } from './overlays/HeroOverlay';
 import { UniverseOverlay } from './overlays/UniverseOverlay';
 import { ImpactOverlay } from './overlays/ImpactOverlay';
@@ -17,6 +18,7 @@ import { RevealOverlay } from './overlays/RevealOverlay';
  * Archon — Cinematic Marketing Website
  *
  * Architecture:
+ * - Persistent top nav (z-index: 100)
  * - Fixed full-viewport Three.js Canvas (z-index: 1)
  * - Scrollable HTML overlay container (z-index: 2)
  * - Single scroll progress state drives everything
@@ -28,6 +30,9 @@ export default function MarketingSite() {
 
   return (
     <>
+      {/* Persistent navigation — above everything */}
+      <MarketingNav />
+
       {/* Fixed 3D Canvas — fills entire viewport, behind scroll layer */}
       <div className="canvas-container">
         <Canvas

@@ -509,4 +509,9 @@ body {
 
 /* ── Responsive Dashboard ───────────────────────────────────── */
 @media (max-width: 1024px) { .dash-main { padding: 2rem !important; } }
-@media (max-width: 768px)  { .dash-main { padding: 1.5rem 1rem !important; } }
+@media (max-width: 768px)  { .dash-main { padding: 4.5rem 1rem 1.5rem !important; } }
+
+/* ── Spin animation (used by login loader) ──────────────────── */
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

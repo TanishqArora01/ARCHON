@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+  <!-- Black background -->
+  <rect width="32" height="32" rx="6" fill="#000000"/>
+  
+  <!-- A stylized "A" / graph node shape representing Archon -->
+  <!-- Outer hexagon-ish shape suggesting repository intelligence -->
+  <polygon points="16,4 26,9.5 26,22.5 16,28 6,22.5 6,9.5" stroke="#22c55e" stroke-width="1.2" fill="none" opacity="0.6"/>
+  
+  <!-- Inner letter A shape -->
+  <path d="M11 23 L16 9 L21 23" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+  <path d="M12.8 18 L19.2 18" stroke="#ffffff" stroke-width="2" stroke-linecap="round"/>
+  
+  <!-- Small graph nodes suggesting intelligence -->
+  <circle cx="16" cy="9" r="1.5" fill="#22c55e"/>
+  <circle cx="21" cy="23" r="1.5" fill="#22c55e" opacity="0.7"/>
+  <circle cx="11" cy="23" r="1.5" fill="#22c55e" opacity="0.7"/>
+</svg>

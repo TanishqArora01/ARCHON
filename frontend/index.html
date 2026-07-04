@@ -6,17 +6,29 @@
     <title>Archon — AI Staff Engineer Platform</title>
     <meta name="description" content="Repository Intelligence for Modern Engineering Teams. Archon understands systems, architecture, dependencies, and technical debt at repository scale." />
     <meta name="theme-color" content="#000000" />
+    <link rel="canonical" href="https://archon-inky.vercel.app/" />
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="shortcut icon" href="/favicon.svg" />
 
     <!-- Open Graph -->
     <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://archon-inky.vercel.app/" />
     <meta property="og:title" content="Archon — AI Staff Engineer Platform" />
     <meta property="og:description" content="Understand systems. Not files. Repository intelligence, architecture intelligence, and engineering reasoning." />
     <meta property="og:site_name" content="Archon" />
+    <meta property="og:image" content="https://archon-inky.vercel.app/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Archon — AI Staff Engineer Platform. Understand systems. Not files." />
 
     <!-- Twitter Card -->
     <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@archon_ai" />
     <meta name="twitter:title" content="Archon — AI Staff Engineer Platform" />
     <meta name="twitter:description" content="Understand systems. Not files. Repository intelligence for modern engineering teams." />
+    <meta name="twitter:image" content="https://archon-inky.vercel.app/og-image.png" />
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -25,10 +37,71 @@
 
     <style>
       html, body { margin: 0; padding: 0; background: #000; overflow-x: hidden; }
+
+      /* Pre-JS loading screen — shown until React mounts */
+      #app-loader {
+        position: fixed;
+        inset: 0;
+        background: #000;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.4s ease;
+      }
+      #app-loader.hidden { opacity: 0; pointer-events: none; }
+
+      #app-loader svg {
+        width: 40px;
+        height: 40px;
+        animation: spin 1.2s linear infinite;
+      }
+      #app-loader p {
+        margin-top: 16px;
+        font-family: 'Inter', sans-serif;
+        font-size: 11px;
+        letter-spacing: 3px;
+        color: rgba(255,255,255,0.25);
+        text-transform: uppercase;
+      }
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
     </style>
   </head>
   <body>
+    <!-- Pre-hydration loading indicator — hidden once React mounts -->
+    <div id="app-loader">
+      <svg viewBox="0 0 50 50" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="25" cy="25" r="20" stroke="rgba(255,255,255,0.08)" stroke-width="3"/>
+        <path d="M25 5 A20 20 0 0 1 45 25" stroke="#22c55e" stroke-width="3" stroke-linecap="round"/>
+      </svg>
+      <p>Archon</p>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Hide loader once React has mounted
+      document.addEventListener('DOMContentLoaded', function() {
+        var root = document.getElementById('root');
+        var loader = document.getElementById('app-loader');
+        if (!root || !loader) return;
+        var observer = new MutationObserver(function() {
+          if (root.children.length > 0) {
+            loader.classList.add('hidden');
+            setTimeout(function() { loader.style.display = 'none'; }, 500);
+            observer.disconnect();
+          }
+        });
+        observer.observe(root, { childList: true });
+        // Fallback: hide after 8 seconds regardless
+        setTimeout(function() {
+          loader.classList.add('hidden');
+          setTimeout(function() { loader.style.display = 'none'; }, 500);
+        }, 8000);
+      });
+    </script>
   </body>
 </html>

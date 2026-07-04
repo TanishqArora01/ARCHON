@@ -1,83 +1,103 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { Network, Search, Activity, Box, LogOut, User, Bot, Sparkles } from 'lucide-react';
+import { Network, Search, Activity, Box, LogOut, User, Bot, Sparkles, Menu, X } from 'lucide-react';
 import { useAuth } from '../../auth/AuthContext';
 
 const NAV_ITEMS = [
-  { label: 'Repositories',   icon: Box,      path: '/dashboard/repositories' },
-  { label: 'Analysis Runs',  icon: Activity, path: '/dashboard/analysis' },
-  { label: 'Graph Search',   icon: Search,   path: '/dashboard/search' },
-  { label: 'Impact Analysis',icon: Network,  path: '/dashboard/impact' },
-  { label: 'Agent System',   icon: Bot,      path: '/dashboard/agents' },
+  { label: 'Repositories',    icon: Box,      path: '/dashboard/repositories' },
+  { label: 'Analysis Runs',   icon: Activity, path: '/dashboard/analysis' },
+  { label: 'Graph Search',    icon: Search,   path: '/dashboard/search' },
+  { label: 'Impact Analysis', icon: Network,  path: '/dashboard/impact' },
+  { label: 'Agent System',    icon: Bot,      path: '/dashboard/agents' },
 ];
 
 export function Sidebar() {
   const { logout, user } = useAuth();
+  const [isMobile, setIsMobile] = useState(false);
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return (
-    <aside style={{
-      width: '260px',
-      minWidth: '260px',
-      height: '100vh',
-      backgroundColor: 'rgba(8, 10, 12, 0.9)',
-      backdropFilter: 'blur(20px)',
-      borderRight: '1px solid rgba(255, 255, 255, 0.05)',
-      display: 'flex',
-      flexDirection: 'column',
-      padding: '0',
-      position: 'sticky',
-      top: 0,
-      overflowY: 'auto',
-      overflowX: 'hidden',
-    }}>
+  useEffect(() => {
+    const checkMobile = () => setIsMobile(window.innerWidth < 768);
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
 
+  // Close mobile sidebar on route change
+  const handleNavClick = () => {
+    if (isMobile) setMobileOpen(false);
+  };
+
+  const sidebarContent = (
+    <aside
+      style={{
+        width: isMobile ? '100%' : '260px',
+        minWidth: isMobile ? undefined : '260px',
+        height: '100vh',
+        backgroundColor: 'rgba(8, 10, 12, 0.95)',
+        backdropFilter: 'blur(20px)',
+        borderRight: '1px solid rgba(255, 255, 255, 0.05)',
+        display: 'flex',
+        flexDirection: 'column',
+        padding: '0',
+        position: isMobile ? 'fixed' : 'sticky',
+        top: 0,
+        left: 0,
+        zIndex: isMobile ? 200 : 1,
+        overflowY: 'auto',
+        overflowX: 'hidden',
+      }}
+    >
       {/* Logo / Brand */}
-      <div style={{ padding: '1.75rem 1.5rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
-          <div style={{
-            width: '26px', height: '26px', borderRadius: '7px',
-            background: 'linear-gradient(135deg, rgba(110,231,192,0.3), rgba(125,168,255,0.2))',
-            border: '1px solid rgba(110,231,192,0.3)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-          }}>
-            <Sparkles size={13} color="#6ee7c0" />
+      <div style={{ padding: '1.75rem 1.5rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.04)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', marginBottom: '0.25rem' }}>
+            <div style={{
+              width: '26px', height: '26px', borderRadius: '7px',
+              background: 'linear-gradient(135deg, rgba(110,231,192,0.3), rgba(125,168,255,0.2))',
+              border: '1px solid rgba(110,231,192,0.3)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+            }}>
+              <Sparkles size={13} color="#6ee7c0" />
+            </div>
+            <h2 style={{
+              fontSize: '1rem', fontWeight: 700, letterSpacing: '0.1em',
+              margin: 0, color: '#fff',
+            }}>
+              ARCHON
+            </h2>
           </div>
-          <h2 style={{
-            fontSize: '1rem',
-            fontWeight: 700,
-            letterSpacing: '0.1em',
-            margin: 0,
-            color: '#fff',
+          <span style={{
+            fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)',
+            textTransform: 'uppercase', letterSpacing: '0.1em', paddingLeft: '0.1rem',
           }}>
-            ARCHON
-          </h2>
+            AI Staff Engineer · v1.0
+          </span>
         </div>
-        <span style={{
-          fontSize: '0.68rem',
-          color: 'rgba(255,255,255,0.3)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          paddingLeft: '0.1rem',
-        }}>
-          AI Staff Engineer · v1.0
-        </span>
+
+        {/* Close button on mobile */}
+        {isMobile && (
+          <button
+            onClick={() => setMobileOpen(false)}
+            style={{
+              background: 'none', border: 'none', color: 'rgba(255,255,255,0.4)',
+              cursor: 'pointer', padding: '0.25rem',
+            }}
+          >
+            <X size={20} />
+          </button>
+        )}
       </div>
 
       {/* Navigation */}
       <nav style={{
-        flex: 1,
-        padding: '1rem 0.75rem',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.25rem',
+        flex: 1, padding: '1rem 0.75rem',
+        display: 'flex', flexDirection: 'column', gap: '0.25rem',
       }}>
         <p style={{
-          fontSize: '0.65rem',
-          color: 'rgba(255,255,255,0.25)',
-          textTransform: 'uppercase',
-          letterSpacing: '0.1em',
-          padding: '0.25rem 0.5rem 0.75rem',
-          margin: 0,
+          fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)',
+          textTransform: 'uppercase', letterSpacing: '0.1em',
+          padding: '0.25rem 0.5rem 0.75rem', margin: 0,
         }}>
           Platform
         </p>
@@ -85,6 +105,7 @@ export function Sidebar() {
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={handleNavClick}
             className={({ isActive }) => `sidebar-nav-link${isActive ? ' active' : ''}`}
           >
             <item.icon size={17} strokeWidth={1.8} />
@@ -97,48 +118,34 @@ export function Sidebar() {
       <div style={{
         padding: '0.75rem',
         borderTop: '1px solid rgba(255,255,255,0.04)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '0.25rem',
+        display: 'flex', flexDirection: 'column', gap: '0.25rem',
       }}>
         {user && (
           <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '0.75rem',
-            padding: '0.75rem',
-            borderRadius: '8px',
-            backgroundColor: 'rgba(255,255,255,0.03)',
-            marginBottom: '0.25rem',
+            display: 'flex', alignItems: 'center', gap: '0.75rem',
+            padding: '0.75rem', borderRadius: '8px',
+            backgroundColor: 'rgba(255,255,255,0.03)', marginBottom: '0.25rem',
           }}>
             <div style={{
               width: '30px', height: '30px', borderRadius: '50%',
               background: 'linear-gradient(135deg, rgba(110,231,192,0.2), rgba(125,168,255,0.2))',
               border: '1px solid rgba(255,255,255,0.1)',
               display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'rgba(255,255,255,0.7)',
-              flexShrink: 0,
+              color: 'rgba(255,255,255,0.7)', flexShrink: 0,
             }}>
               <User size={14} />
             </div>
             <div style={{ flex: 1, overflow: 'hidden' }}>
               <div style={{
-                fontSize: '0.82rem',
-                fontWeight: 500,
-                color: '#fff',
-                whiteSpace: 'nowrap',
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
+                fontSize: '0.82rem', fontWeight: 500, color: '#fff',
+                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
               }}>
                 {user.username}
               </div>
               <div style={{
                 fontSize: '0.65rem',
-                color: user.provider === 'demo'
-                  ? 'rgba(110,231,192,0.6)'
-                  : 'rgba(255,255,255,0.35)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.06em',
+                color: user.provider === 'demo' ? 'rgba(110,231,192,0.6)' : 'rgba(255,255,255,0.35)',
+                textTransform: 'uppercase', letterSpacing: '0.06em',
               }}>
                 {user.provider}
               </div>
@@ -157,4 +164,53 @@ export function Sidebar() {
       </div>
     </aside>
   );
+
+  if (isMobile) {
+    return (
+      <>
+        {/* Mobile hamburger bar */}
+        <div style={{
+          position: 'fixed', top: 0, left: 0, right: 0,
+          height: '52px', zIndex: 150,
+          backgroundColor: 'rgba(8,10,12,0.95)',
+          backdropFilter: 'blur(20px)',
+          borderBottom: '1px solid rgba(255,255,255,0.05)',
+          display: 'flex', alignItems: 'center', padding: '0 1rem', gap: '0.75rem',
+        }}>
+          <button
+            onClick={() => setMobileOpen(true)}
+            style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: '0.25rem' }}
+          >
+            <Menu size={22} />
+          </button>
+          <span style={{ color: '#fff', fontFamily: '"Space Grotesk", sans-serif', fontWeight: 600, fontSize: '0.95rem', letterSpacing: '0.05em' }}>
+            ARCHON
+          </span>
+        </div>
+
+        {/* Overlay + drawer */}
+        {mobileOpen && (
+          <>
+            {/* Backdrop */}
+            <div
+              onClick={() => setMobileOpen(false)}
+              style={{
+                position: 'fixed', inset: 0, zIndex: 190,
+                background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(2px)',
+              }}
+            />
+            {/* Drawer */}
+            <div style={{ position: 'fixed', top: 0, left: 0, bottom: 0, width: '280px', zIndex: 200 }}>
+              {sidebarContent}
+            </div>
+          </>
+        )}
+
+        {/* Spacer for fixed header */}
+        <div style={{ height: '52px', flexShrink: 0 }} />
+      </>
+    );
+  }
+
+  return sidebarContent;
 }
