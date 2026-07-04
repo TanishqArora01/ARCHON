@@ -94,7 +94,7 @@ export function MarketingNav() {
         <NavLink href="https://github.com/TanishqArora01/ARCHON" external>
           GitHub
         </NavLink>
-        <NavLink href="#docs" external={false}>
+        <NavLink href="https://github.com/TanishqArora01/ARCHON#readme" external>
           Docs
         </NavLink>
       </div>
