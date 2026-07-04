@@ -26,7 +26,7 @@ class Settings(BaseSettings):
     WEBHOOK_RATE_LIMIT_PER_MINUTE: int = Field(default=60, ge=1)
     SECRET_ENCRYPTION_KEY: str | None = None
     JWT_SECRET_KEY: str = "archon-dev-secret-change-in-production"
-    FRONTEND_URL: str = "http://localhost:5173"
+    FRONTEND_URL: str = "https://archon-inky.vercel.app"
 
     LLM_PROVIDER: str = "ollama"
     LLM_MODEL: str = "qwen2.5"
@@ -69,11 +69,11 @@ class Settings(BaseSettings):
     GITHUB_API_URL: str = "https://api.github.com"
     GITHUB_OAUTH_CLIENT_ID: str | None = None
     GITHUB_OAUTH_CLIENT_SECRET: str | None = None
-    GITHUB_OAUTH_REDIRECT_URI: str | None = None
+    GITHUB_OAUTH_REDIRECT_URI: str = "https://archon-ixrh.onrender.com/api/v1/oauth/github/callback"
     GITLAB_API_URL: str = "https://gitlab.com"
     GITLAB_OAUTH_CLIENT_ID: str | None = None
     GITLAB_OAUTH_CLIENT_SECRET: str | None = None
-    GITLAB_OAUTH_REDIRECT_URI: str | None = None
+    GITLAB_OAUTH_REDIRECT_URI: str = "https://archon-ixrh.onrender.com/api/v1/oauth/gitlab/callback"
 
     OTEL_ENABLED: bool = False
     OTEL_EXPORTER_OTLP_ENDPOINT: str | None = None

@@ -27,7 +27,7 @@ OAUTH_STATE_TTL_SECONDS = 600
 async def start_oauth(provider: str) -> RedirectResponse:
     state = secrets.token_urlsafe(32)
     if provider == "github":
-        if not settings.GITHUB_OAUTH_CLIENT_ID or not settings.GITHUB_OAUTH_REDIRECT_URI:
+        if not settings.GITHUB_OAUTH_CLIENT_ID:
             raise HTTPException(status_code=500, detail="GitHub OAuth is not configured")
         await _store_oauth_state(state, provider)
         query = urlencode(
@@ -40,7 +40,7 @@ async def start_oauth(provider: str) -> RedirectResponse:
         )
         return RedirectResponse(f"https://github.com/login/oauth/authorize?{query}")
     if provider == "gitlab":
-        if not settings.GITLAB_OAUTH_CLIENT_ID or not settings.GITLAB_OAUTH_REDIRECT_URI:
+        if not settings.GITLAB_OAUTH_CLIENT_ID:
             raise HTTPException(status_code=500, detail="GitLab OAuth is not configured")
         await _store_oauth_state(state, provider)
         query = urlencode(
