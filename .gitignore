@@ -31,3 +31,11 @@ dist/
 .env.development.local
 .env.test.local
 .env.production.local
+
+# Video / screen recordings (do NOT commit large media)
+*.mp4
+*.mov
+*.avi
+*.webm
+Recording*.mp4
+Recording*.mov
