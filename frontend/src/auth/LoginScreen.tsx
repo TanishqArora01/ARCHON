@@ -326,18 +326,7 @@ export function LoginScreen() {
           </div>
         )}
 
-        {/* Footer note */}
-        <p
-          style={{
-            fontSize: '0.72rem',
-            color: 'rgba(255,255,255,0.18)',
-            textAlign: 'center',
-            margin: 0,
-            lineHeight: 1.6,
-          }}
-        >
-          Open source · Self-hostable · Docker Compose
-        </p>
+
       </div>
     </div>
   );

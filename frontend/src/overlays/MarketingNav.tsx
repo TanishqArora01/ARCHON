@@ -91,12 +91,6 @@ export function MarketingNav() {
           alignItems: 'center',
         }}
       >
-        <NavLink href="https://github.com/TanishqArora01/ARCHON" external>
-          GitHub
-        </NavLink>
-        <NavLink href="https://github.com/TanishqArora01/ARCHON#readme" external>
-          Docs
-        </NavLink>
       </div>
 
       {/* CTA */}
